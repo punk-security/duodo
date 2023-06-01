@@ -55,7 +55,7 @@ def get_env(key:str) -> str:
     try:
         var = environ[key.upper()]
     except KeyError:
-        print("--", key,"was not provided and isn't not in environment variables. Please specify at least one.")
+        print("--", key.replace("_", "-"),"was not provided and isn't not in environment variables. Please specify at least one.")
         exit()
     return var
 
@@ -94,7 +94,7 @@ if args.list_groups is not None:
     for group in groups:
         print("-", group["name"])
     exit()
-    
+
 
 batch_size = args.batch_size
 time_between = args.time_between
@@ -104,7 +104,15 @@ user_wait = args.user_wait
 if args.output_file is not None:
     output_file = args.output_file
 else:
-    output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%d%m%Y-%H%M%S") + ".csv"
+    output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d-%H%M%S") + ".csv"
+
+# Mutually exclusive resume from last and file, so only 1 can be passed in
+if args.resume_from_last is not None:
+    output_file = args.resume_from_last
+
+if args.resume_from_file is not None:
+    output_file = args.resume_from_file
+
 
 if args.ignore_list is not None:
     if not path.exists(args.ignore_list):
@@ -115,20 +123,6 @@ if args.user_list is not None:
     if not path.exists(args.user_list):
         print(str(args.args.user_list), "not found.")
         exit()
-
-
-
-# TODO: list-groups thing
-# TODO: user-list and ignore-list pass in file name instead
-# TODO: argparser defaults
-# TODO: typos
-# TODO: function for env vars e.g. e = get_env(admin_key.upper())
-# TODO: requireds
-# TODO: tell user they must use country code -> then remove country code
-# TODO: 
-
-# Future refactor:
-# TODO: call batch of users, run, then call another batch, etc.
 
 
 def main():
@@ -160,27 +154,13 @@ def main():
     print("Finished")
 
 
-# Reactivates user if they've been locked out
-# This doesn't work. Keep getting lockedout emails
-#def remove_user_lockout(user_id):
-#    """
-#    Reactivates users that have been locked out of their account.
-#
-#    :param user_id: string of user objects
-#    :type user_id: str
-#    """    
-#    u = admin_api.update_user(user_id, status="active")
-#    if u["status"] != "active":
-#        return False
-#    return True
-
-
 def retrieve_users() -> list:
     """
     Gets all users associated with the Duo account from the endpoint.
 
-    https://github.com/duosecurity/duo_client_python/blob/master/duo_client/admin.py
-    """
+    :return: A complete list of users
+    :rtype: list
+    """    
     offset = 0
     users = admin_api.get_users(limit=300)
 
@@ -198,6 +178,14 @@ def retrieve_users() -> list:
 
 
 def filter_by_group(all_users:list) -> list:
+    """
+    Filters out users from a give list of user objects using 
+
+    :param all_users: _description_
+    :type all_users: list
+    :return: _description_
+    :rtype: list
+    """    
     users = []
 
     groups = admin_api.get_groups()
@@ -241,18 +229,18 @@ def get_users_from_list(all_users:list) -> list:
     users = []
     # Gets all users from user-list.txt
     try:
-        with open("user-list.txt", "r") as file:
+        with open(args.user_list, "r") as file:
             spamreader = csv.reader(file, delimiter='-')
             for row in spamreader:
                 print(row)
-                users.append(row) # list of lists, in the format [['firstname lastname - phonenumber'], [...]]
+                users.append(row)
     except FileNotFoundError:
         print("user-list.txt not found.")
         exit()
 
 
     filtered_users_details = []
-    # Gets all user objects that have the same realname as those provided in user-list.txt, and removes phones with phone numbers that weren't specified in the list
+    # Gets all user objects that have the same realname as those provided in user list, and removes phones with phone numbers that weren't specified in the list
     for user in all_users:
         for needed_user in users:
             # See if this user object is the user we need
@@ -308,11 +296,8 @@ def send_push_notifications(users_list:list):
             pass
 
         for i in unable_to_push:
-            print(unable_to_push)
-            print(i)
-
+            # i[2] is the user's username and i[0] is the user's user_id
             result +=  [[i[2], i[0], "", "", "\'Unable to push notification\'", str(datetime.datetime.now()), "\n"]]
-            print(result)
 
         with open(output_file, "a", newline='\n') as file:
             spamwriter = csv.writer(file, delimiter=',')
@@ -338,25 +323,24 @@ def send_notification_query(user_id:str, devices:list, username:str) -> list:
     :return: list of output information (username, user_id, response_status, responses_message)
     :rtype: list
     """     
-    lockout_reattempt = 0
+
     for i in range(0, user_pings):
-        res = auth_api.auth("push", user_id=user_id, type=push_text, device=devices) # , async_txn=True
+        res = auth_api.auth("push", user_id=user_id, type=args.push_text, device=devices)
         
         if res["status"] == "fraud":
             break
+
         # Lockout will return status as deny or timeout sometimes instead of lockout even when locked out in admin panel
-        if lockout_reattempt < 2 and (res["status"] == "locked_out" or "Your account is disabled" in res["status_msg"]):
+        if res["status"] == "locked_out" or "Your account is disabled" in res["status_msg"]:
             break
 
-        print(res)
         if res["result"] == "allow":
             break
+
         if i != user_pings:
-            print("user_wait", user_wait)
             time.sleep(user_wait)
 
     return [username, user_id, res['result'], res["status"],"\'" + res['status_msg'] + "\'", str(datetime.datetime.now())]
-
 
 
 def get_ignore_list() -> list:
@@ -367,7 +351,7 @@ def get_ignore_list() -> list:
     :rtype: list
     """    
     skip_users = []
-    with open("ignore-list.txt", "r") as file:
+    with open(args.ignore_list, "r") as file:
         spamreader = csv.reader(file, delimiter=',')
         for row in spamreader:
             skip_users.append(row[0])
@@ -400,8 +384,6 @@ def filter_users(all_users:list, skip_users:list) -> list:
     for user in skip_users:
         users_to_remove.append(user)
 
-    #users_to_remove = set(all_usernames).intersection(set(skip_users))
-
     # Removes inactive users and users in the ignore list
     i = 0
     while i < len(all_users):
@@ -426,19 +408,14 @@ def check_duo_push(users: list) -> dict:
     users_details = {}
     for user in users:
         # Get user's associated phones and checks if push is activated on any of them
-        phones = []
+        try:
+            phones = admin_api.get_user_phones(user["user_id"])
+        except Exception as e:
+            print("A problem occurred when trying to get", user["name"], "phone numbers")
+            users_details[user["user_id"]] = {"username": user["username"], "devices": []]}
+            continue
 
-        ### DEBUG
-        phones = admin_api.get_user_phones(user["user_id"])
-
-        useable_phones = []
-        for phone in phones:
-            # Checks id push notifications enabled
-            if phone["activated"] == True:
-                for capability in phone["capabilities"]:
-                    if capability == "push": 
-                        useable_phones.append(phone["phone_id"])
-                
+        useable_phones = [phone["phone_id"] for phone in phones if phone["activated"] and "push" in phone["capabilities"]]
         users_details[user["user_id"]] = {"username": user["username"], "devices": useable_phones}
 
     return users_details
