@@ -359,7 +359,6 @@ def get_ignore_list() -> list:
     return skip_users
 
 
-
 def filter_users(all_users:list, skip_users:list) -> list:
     """
     Removes users from the users list that have already received push notifications, and that are in the skip users list.
@@ -412,7 +411,7 @@ def check_duo_push(users: list) -> dict:
             phones = admin_api.get_user_phones(user["user_id"])
         except Exception as e:
             print("A problem occurred when trying to get", user["name"], "phone numbers")
-            users_details[user["user_id"]] = {"username": user["username"], "devices": []]}
+            users_details[user["user_id"]] = {"username": user["username"], "devices": []}
             continue
 
         useable_phones = [phone["phone_id"] for phone in phones if phone["activated"] and "push" in phone["capabilities"]]
