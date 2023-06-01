@@ -30,7 +30,7 @@ output_exclusive.add_argument('-l', '--resume-from-last', action='store_true', d
 
 parser.add_argument('-i', '--ignore-list', help='Path to file of list of usernames to ignore')
 parser.add_argument('-u', '--user-list', action='store_true', default=False, help="Sends push notifications only to specified users. Userlist format is `firstname lastname - phonenumber`")
-parser.add_argument('-p', '--push-text', default="Login" help="Text to display in push notification. Defaults to 'Login'")
+parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'")
 parser.add_argument('-g', '--by-group', help="Send push notifications to all users in a specific group")
 
 parser.add_argument('--list-groups', help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint")
