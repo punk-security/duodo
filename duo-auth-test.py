@@ -6,177 +6,129 @@ import duo_client
 
 parser = argparse.ArgumentParser(
     prog='Duo Push Notification Tester',
-    description='Sends push notifications to all specified users, staggered over the specificed period of time',
+    description='Sends push notifications to all specified users, staggered over the specified period of time',
 )
 
-parser.add_argument('-b', '--batch-size', type=int, help='The number of users to send push notifications to at once') # number of users to ping at once
-parser.add_argument('-p', '--user-pings', type=int, help='The number of times to send a user a push notificaiton in a row. Defaults to 1') # number of users to ping at once
-parser.add_argument('-w', '--user-wait', type=int, help='The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notificaiton to timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1') # number of users to ping at once
-parser.add_argument('-t', '--time-between', type=int, help='The amount of time in seconds to wait between each batch of push notifications') # defaults to 5 minutes
-parser.add_argument('--admin-ikey', help="Admin API integration key") # integration key
-parser.add_argument('--admin-skey', help="Admin API secret key") # secret key
-parser.add_argument('--auth-ikey', help="Auth API integration key") # integration key
-parser.add_argument('--auth-skey', help="Auth API secret key") # secret key
-parser.add_argument('-a', '--host', required=True, help="API hot url")
-parser.add_argument('-o', '--output-file', help='Name of the output file')
-parser.add_argument('-i', '--ignore-list', action='store_true', help='List of usernames to ignore') # from last file or specific file?
-parser.add_argument('-l', '--resume-from-last', action='store_true', help="Resumes sending push notifications from the lastest file produced in results")
-parser.add_argument('-r', '--resume-from-file', action='store_true', help='Resumes sending push notifications from output file provided') # , required="--output-file" in sys.argv
-parser.add_argument('-u', '--user-list', action='store_true', help="Sends push notifications only to specificed users. Userlist format is `firstname lastname - phonenumber`")
-parser.add_argument('-n', '--push-text', help="Text to display in push notification. Defaults to 'TEST PUSH'")
-parser.add_argument('-g', '--by-group', help="Send push notifications to all users in a specific group")
+user_pings_wait = parser.add_argument_group("user_pings_wait")
+user_pings_wait.add_argument('-w', '--user-wait', type=int, default=60, help='The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1') # number of users to ping at once
+user_pings_wait.add_argument('-u', '--user-pings', type=int, default=1, help='The number of times to send a user a push notification in a row. Defaults to 1') # number of users to ping at once
 
+parser.add_argument('-b', '--batch-size', type=int, default=1, help='The number of users to send push notifications to at once') # number of users to ping at once
+parser.add_argument('-t', '--time-between', type=int, default=300, help='The amount of time in seconds to wait between each batch of push notifications') # defaults to 5 minutes
+
+duo_keys = parser.add_argument_group("duo_keys")
+duo_keys.add_argument('host', required=True, help="API host url. E.g. api-1234abcd.duosecurity.com")
+duo_keys.add_argument('--admin-ikey', help="Admin API integration key") # integration key
+duo_keys.add_argument('--admin-skey', help="Admin API secret key") # secret key
+duo_keys.add_argument('--auth-ikey', help="Auth API integration key") # integration key
+duo_keys.add_argument('--auth-skey', help="Auth API secret key") # secret key
+
+output_exclusive = parser.add_mutually_exclusive_group(required=False)
+output_exclusive.add_argument('-o', '--output-file', default=None, help='Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv')
+output_exclusive.add_argument('-f', '--resume-from-file', help="Path of file containing results of a previous campaign to use to resume sending push notifications to and updating")
+output_exclusive.add_argument('-l', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results")
+
+parser.add_argument('-i', '--ignore-list', help='Path to file of list of usernames to ignore')
+parser.add_argument('-u', '--user-list', action='store_true', default=False, help="Sends push notifications only to specified users. Userlist format is `firstname lastname - phonenumber`")
+parser.add_argument('-p', '--push-text', default="Login" help="Text to display in push notification. Defaults to 'Login'")
+parser.add_argument('-g', '--by-group', help="Send push notifications to all users in a specific group")
 
 parser.add_argument('--list-groups', help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint")
 
-# TODO: can list groups - needs to be used alone / ignore all other commands
-
-# Can manually set enviroemtn vriables
+# Can manually set environment variables
 #environ["admin_ikey"] = ""
 #environ["admin_skey"] = ""
 #environ["auth_ikey"] = ""
 #environ["auth_skey"] = ""
-#host = ""
 
 makedirs("results", exist_ok=True)
+
+def get_env(key:str) -> str:
+    """
+    Attempts to get environment 
+
+    :param key: _description_
+    :type key: str
+    :return: _description_
+    :rtype: str
+    """    
+    try:
+        var = environ[key.upper()]
+    except KeyError:
+        print("--", key,"was not provided and isn't not in environment variables. Please specify at least one.")
+        exit()
+    return var
 
 args = parser.parse_args()
 
 if args.admin_ikey is not None:
     admin_ikey = args.admin_ikey
 else:
-    try:
-        admin_ikey = environ['ADMIN_IKEY']
-    except KeyError:
-        print("--admin_ikey not provided and key not in environment variables. Please specify at least 1.")
-        exit()
+    admin_ikey = get_env("admin_ikey")
 
 if args.admin_skey is not None:
     admin_skey = args.admin_skey
 else:
-    try:
-        admin_skey = environ['admin_skey']
-    except KeyError:
-        print("--admin_skey not provided and key not in environment variables. Please specify at least 1.")
-        exit()
+    admin_skey = get_env("admin_skey")
 
 if args.auth_ikey is not None:
     auth_ikey = args.auth_ikey
 else:
-    try:
-        auth_ikey = environ['auth_ikey']
-    except KeyError:
-        print("--auth_ikey not provided and key not in environment variables. Please specify at least 1.")
-        exit()
+    auth_ikey = get_env("auth_ikey")
 
 if args.auth_skey is not None:
     auth_skey = args.auth_skey
 else:
-    try:
-        auth_skey = environ['auth_skey']
-    except KeyError:
-        print("--auth_skey not provided and key not in environment variables. Please specify at least 1.")
-        exit()
+    auth_skey = get_env("auth_skey")
 
-if args.host is not None:
-    host = args.host
-else:
-    print("A host url must be provided. e.g. api-1234abcd.duosecurity.com")
-    exit()
+host = args.host
+
 
 admin_api = duo_client.Admin(ikey=admin_ikey, skey=admin_skey, host=host)
 auth_api = duo_client.Auth(ikey=auth_ikey, skey=auth_skey, host=host)
 
+
 # List groups
 if args.list_groups is not None:
     groups = admin_api.get_groups()
+    for group in groups:
+        print("-", group["name"])
+    exit()
     
 
-# Batch Size
-if args.batch_size is not None:
-    batch_size = args.batch_size
-else:
-    batch_size = 3
-
-# Time between
-if args.time_between is not None:
-    time_between = args.time_between
-else:
-    time_between = 300 # 5 minutes
-
-# User pings
-user_wait = 0
-if args.user_pings is not None:
-    user_pings = args.user_pings
-    # Amount of time to wait between pings
-    if args.user_wait is not None:
-        user_wait = args.user_wait
-    else:
-        user_wait = 60
-else:
-    if args.user_wait is not None:
-        print("--user-pings not speccified. Only use this command if you're sending more then 1 ping to a user.")
-        exit()
-    user_pings = 1
+batch_size = args.batch_size
+time_between = args.time_between
+user_pings = args.user_pings
+user_wait = args.user_wait
 
 if args.output_file is not None:
-    output_file = "results/" + args.output_file
+    output_file = args.output_file
 else:
     output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%d%m%Y-%H%M%S") + ".csv"
 
-if args.ignore_list:
-    if not path.exists("ignore-list.txt"):
-        print("ignore-list.txt not found.")
+if args.ignore_list is not None:
+    if not path.exists(args.ignore_list):
+        print(str(args.ignore_list), "not found.")
         exit()
 
-if args.user_list:
-    if not path.exists("user-list.txt"):
-        print("user-list.txt not found.")
-        exit()
-
-if args.resume_from_file and args.resume_from_last:
-    print("Only one of resume-from-file or resume-from-last may be be specified")
-    exit()
-
-if args.resume_from_last:
-    print("Resuming from last modified results file")
-    files = listdir(path.abspath('results'))
-    last_modified_list = {}
-
-    if len(files) == 0:
-        print("No previous results files was found to use.")
-        exit()
-
-    for file in files:
-        last_modified_list[str(path.getmtime("results/"+file))] = file
-
-    int_keys = []
-    for key in last_modified_list.keys():
-        int_keys.append(float(key))
-
-    int_keys.sort(reverse=True)
-
-    output_file = "results/" + last_modified_list[str(int_keys[0])]
-
-
-if args.resume_from_file:
-    if args.output_file is not None:
-    
-        try:
-            f = open("results/" + args.output_file, 'r')
-            f.close()
-        except FileNotFoundError:
-            print("File 'results/" + args.output_file + "' not found.")
-            exit()
-    else:
-        print("No output file specified.")
+if args.user_list is not None:
+    if not path.exists(args.user_list):
+        print(str(args.args.user_list), "not found.")
         exit()
 
 
-if args.push_text is not None:
-    push_text = args.push_text
-else:
-    push_text = "TEST PUSH"
+
+# TODO: list-groups thing
+# TODO: user-list and ignore-list pass in file name instead
+# TODO: argparser defaults
+# TODO: typos
+# TODO: function for env vars e.g. e = get_env(admin_key.upper())
+# TODO: requireds
+# TODO: tell user they must use country code -> then remove country code
+# TODO: 
+
+# Future refactor:
+# TODO: call batch of users, run, then call another batch, etc.
 
 
 def main():
@@ -255,13 +207,13 @@ def filter_by_group(all_users:list) -> list:
             g = group
 
     if len(g) == 0:
-        print("Group not found, list of avaiable groups:")
+        print("Group not found, list of available groups:")
         for i in groups:
             print(i["name"])
         exit()
 
     try:
-        group_users = admin_api.get_group_users(g["group_id"]) # TODO: fix
+        group_users = admin_api.get_group_users(g["group_id"])
     except Exception as e:
         print("Unable to get group", g["name"])
         print(e)
@@ -377,7 +329,7 @@ def send_push_notifications(users_list:list):
 
 def send_notification_query(user_id:str, devices:list, username:str) -> list:
     """
-    Sends a push notification to a user's registered devices, and records the response (Whether the notification was accepted, denied or timedout)
+    Sends a push notification to a user's registered devices, and records the response (Whether the notification was accepted, denied or timed out)
 
     :param user_id: The user_id of the user
     :type user_id: str
@@ -426,7 +378,7 @@ def get_ignore_list() -> list:
 
 def filter_users(all_users:list, skip_users:list) -> list:
     """
-    Removes users from the users list that have already recieved push notifications, and that are in the skip users list.
+    Removes users from the users list that have already received push notifications, and that are in the skip users list.
 
     :param all_users: List containing multiple User objects
     :type all_users: list
@@ -464,7 +416,7 @@ def filter_users(all_users:list, skip_users:list) -> list:
 
 def check_duo_push(users: list) -> dict:
     """
-    Checks to see if user uses Duo Mobile for push notifications. If it's enabled , it's added to a list assocaited with the user_id
+    Checks to see if user uses Duo Mobile for push notifications. If it's enabled , it's added to a list associated with the user_id
 
     :param users: A list of user IDs
     :type users: list
