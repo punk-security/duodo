@@ -1,6 +1,6 @@
 from multiprocessing import Pool
 from os import environ, path, listdir, makedirs
-import time, datetime, argparse, sys, csv
+import time, datetime, argparse, sys, csv, random, re
 import duo_client
 
 
@@ -135,7 +135,7 @@ def main():
         skip_users = get_ignore_list()
 
     if args.user_list:
-        print("Filtering out Duo users to only get those specified in user-list.txt")
+        print("Filtering out Duo users to only get those specified in user list")
         all_users = get_users_from_list(all_users)
 
     if args.by_group:
@@ -219,7 +219,7 @@ def filter_by_group(all_users:list) -> list:
 
 def get_users_from_list(all_users:list) -> list:
     """
-    Gets real user's names and phone numbers from user-list.txt, and filters `all_users` dictionary to return only users with the names provided in the list, and only with phone object with the given number.
+    Gets real user's email and optionally their phone numbers from user list, and filters `all_users` dictionary to return only users with the names provided in the list, and only with phone object with the given number.
 
     :param all_users: A dictionary containing user objects
     :type all_users: dict
@@ -227,35 +227,31 @@ def get_users_from_list(all_users:list) -> list:
     :rtype: list
     """    
     users = []
-    # Gets all users from user-list.txt
+    # Gets all users from user list
     try:
         with open(args.user_list, "r") as file:
             spamreader = csv.reader(file, delimiter='-')
-            for row in spamreader:
-                print(row)
-                users.append(row)
+            filtered_users = { row[0] : re.sub('[^\d]', '', row[1]) if len(row) > 1 else None for row in spamreader }
+
     except FileNotFoundError:
-        print(args.user_list, "not found.")
+        print(args.user_list, "not found")
         exit()
 
-
-    filtered_users_details = []
-    # Gets all user objects that have the same realname as those provided in user list, and removes phones with phone numbers that weren't specified in the list
+    new_users = []
     for user in all_users:
-        for needed_user in users:
-            # See if this user object is the user we need
-            if user["realname"].lower() in needed_user[0].strip().lower():
-                # Removes phones that won't be used.
-                for i in range(0, len(user["phones"])):
-                    # Removes the first 3 characters of the number as this is a country code e.g. (+44)77..., 
-                    # and first character of the regular number e.g. (0)77...
-                    if user["phones"][i]["number"][3:] == needed_user[1][1:].replace(" ", ""):
-                        user["phones"] = [user["phones"][i]]
-                        break
-                
-                filtered_users_details.append(user)
+        if user["email"] not in filtered_users.keys():
+            continue
+        
+        phone_number = filtered_users[users["email"]]
 
-    return filtered_users_details
+        if phone_number is None:
+            user["phones"] = random.choice(users["phones"])
+        else:
+            user["phones"] = [phone for phone in user["phones"] if phone["number"] == phone_number]
+
+        new_users.append(user)
+
+    #return filtered_users_details
 
     
 
@@ -345,7 +341,7 @@ def send_notification_query(user_id:str, devices:list, username:str) -> list:
 
 def get_ignore_list() -> list:
     """
-    Gets a list of usernames to ignore from the ignore-list.txt
+    Gets a list of usernames to ignore from the ignore list
 
     :return: List of usernames to ignore when sending out push notifications
     :rtype: list
