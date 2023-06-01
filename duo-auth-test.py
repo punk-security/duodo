@@ -235,7 +235,7 @@ def get_users_from_list(all_users:list) -> list:
                 print(row)
                 users.append(row)
     except FileNotFoundError:
-        print("user-list.txt not found.")
+        print(args.user_list, "not found.")
         exit()
 
 
@@ -373,26 +373,19 @@ def filter_users(all_users:list, skip_users:list) -> list:
     users_to_remove = []
 
     # if output file specified - checks if user has already been used and skips them if they have
-    if args.resume_from_file or args.resume_from_last:
-        with open(output_file, 'r') as f:
-            spamreader = csv.reader(f)
-            for row in spamreader:
-                users_to_remove.append(row[0])
+    with open(output_file, 'r') as f:
+        spamreader = csv.reader(f)
+        for row in spamreader:
+            users_to_remove.append(row[0])
 
     # Removes user's we don't want to send notifications to from all_users list
     for user in skip_users:
         users_to_remove.append(user)
 
-    # Removes inactive users and users in the ignore list
-    i = 0
-    while i < len(all_users):
-        # If user is not active or username is in the list of users to remove
-        if all_users[i]["status"] != "active" or all_users[i]["username"] in users_to_remove:
-            del all_users[i]
-        else:
-            i += 1
+    # Creates a list with the inactive users and ignore list users removed
+    filtered_users = [user for user in all_users if user["status"] == "active" or user["username"] not in users_to_remove]
 
-    return all_users
+    return filtered_users
 
 
 def check_duo_push(users: list) -> dict:
