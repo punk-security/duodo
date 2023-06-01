@@ -1,3 +1,5 @@
+Duo push campaign - Duo push notification spammer for testing MFA Auth fatigue
+
 What this is for:
 This script can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
 - Who'll receieve push notifications. You can either send it to all users assocaited with a Duo account, or customise it - 1 or more Duo groups, a specific lsit of users (from user-list.txt), and include a list of users to ignore.
