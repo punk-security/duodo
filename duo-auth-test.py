@@ -1,5 +1,5 @@
 from multiprocessing import Pool
-from os import environ, path, listdir, makedirs
+from os import environ, path, makedirs
 import time, datetime, argparse, sys, csv, random, re
 import duo_client
 
@@ -17,7 +17,7 @@ parser.add_argument('-b', '--batch-size', type=int, default=1, help='The number 
 parser.add_argument('-t', '--time-between', type=int, default=300, help='The amount of time in seconds to wait between each batch of push notifications') # defaults to 5 minutes
 
 duo_keys = parser.add_argument_group("duo_keys")
-duo_keys.add_argument('host', required=True, help="API host url. E.g. api-1234abcd.duosecurity.com")
+duo_keys.add_argument('host', help="API host url. E.g. api-1234abcd.duosecurity.com")
 duo_keys.add_argument('--admin-ikey', help="Admin API integration key") # integration key
 duo_keys.add_argument('--admin-skey', help="Admin API secret key") # secret key
 duo_keys.add_argument('--auth-ikey', help="Auth API integration key") # integration key
@@ -26,18 +26,18 @@ duo_keys.add_argument('--auth-skey', help="Auth API secret key") # secret key
 output_exclusive = parser.add_mutually_exclusive_group(required=False)
 output_exclusive.add_argument('-o', '--output-file', default=None, help='Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv')
 output_exclusive.add_argument('-f', '--resume-from-file', help="Path of file containing results of a previous campaign to use to resume sending push notifications to and updating")
-output_exclusive.add_argument('-l', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results")
+output_exclusive.add_argument('-r', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results")
 
 parser.add_argument('-i', '--ignore-list', help='Path to file of list of usernames to ignore')
-parser.add_argument('-u', '--user-list', action='store_true', default=False, help="Sends push notifications only to specified users. Userlist format is `firstname lastname - phonenumber`")
+parser.add_argument('-l', '--user-list', action='store_true', default=False, help="Sends push notifications only to specified users. Userlist format is either one of `firstname lastname` or `firstname lastname - phonenumber`")
 parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'")
 parser.add_argument('-g', '--by-group', help="Send push notifications to all users in a specific group")
 
-parser.add_argument('--list-groups', help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint")
+parser.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
 
 # Can manually set environment variables
-#environ["admin_ikey"] = ""
-#environ["admin_skey"] = ""
+environ["admin_ikey"] = "DIOB5RRS192NPGQKX0ZT"
+environ["admin_skey"] = "1BDvVZ5QcZVnQyq4CZTCV9MDeFilk4KOK5NoBHRC"
 #environ["auth_ikey"] = ""
 #environ["auth_skey"] = ""
 
@@ -55,11 +55,13 @@ def get_env(key:str) -> str:
     try:
         var = environ[key.upper()]
     except KeyError:
-        print("--", key.replace("_", "-"),"was not provided and isn't not in environment variables. Please specify at least one.")
+        print("--", key.replace("_", "-"),"was not provided and isn't in environment variables. Please specify at least one.")
         exit()
     return var
 
-args = parser.parse_args()
+
+args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+
 
 if args.admin_ikey is not None:
     admin_ikey = args.admin_ikey
@@ -71,6 +73,18 @@ if args.admin_skey is not None:
 else:
     admin_skey = get_env("admin_skey")
 
+host = args.host
+
+admin_api = duo_client.Admin(ikey=admin_ikey, skey=admin_skey, host=host)
+
+# List groups
+if args.list_groups:
+    groups = admin_api.get_groups()
+    print("List of groups:")
+    for group in groups:
+        print("-", group["name"])
+    exit()
+
 if args.auth_ikey is not None:
     auth_ikey = args.auth_ikey
 else:
@@ -80,21 +94,9 @@ if args.auth_skey is not None:
     auth_skey = args.auth_skey
 else:
     auth_skey = get_env("auth_skey")
+    
 
-host = args.host
-
-
-admin_api = duo_client.Admin(ikey=admin_ikey, skey=admin_skey, host=host)
 auth_api = duo_client.Auth(ikey=auth_ikey, skey=auth_skey, host=host)
-
-
-# List groups
-if args.list_groups is not None:
-    groups = admin_api.get_groups()
-    for group in groups:
-        print("-", group["name"])
-    exit()
-
 
 batch_size = args.batch_size
 time_between = args.time_between
