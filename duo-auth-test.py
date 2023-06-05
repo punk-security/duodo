@@ -105,6 +105,8 @@ user_wait = args.user_wait
 
 if args.output_file is not None:
     output_file = args.output_file
+    open(output_file, 'w').close()
+
 
 # Mutually exclusive resume from last and file, so only 1 can be passed in
 elif args.resume_from_last:
