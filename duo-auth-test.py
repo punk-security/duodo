@@ -28,8 +28,8 @@ output_exclusive.add_argument('-o', '--output-file', default=None, help='Full or
 output_exclusive.add_argument('-f', '--resume-from-file', help="Path of file containing results of a previous campaign to use to resume sending push notifications to and updating")
 output_exclusive.add_argument('-r', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results folder at the root of this directory")
 
-parser.add_argument('-i', '--ignore-list', help='Path to file of list of usernames to ignore')
-parser.add_argument('-l', '--user-list', action='store_true', default=False, help="Sends push notifications only to specified users. Userlist format is either one of `firstname lastname` or `firstname lastname - phonenumber`")
+parser.add_argument('-i', '--ignore-list', help='Path to file of list of emails of users to ignore')
+parser.add_argument('-l', '--user-list', action='store_true', default=False, help="Sends push notifications only to specified users. Userlist format is either one of `email` or `email - phonenumber`")
 parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'")
 parser.add_argument('-g', '--by-groups', help="Send push notifications to all users in specified groups. Groups are separated by a comma e.g. \"group1, group2\"")
 
