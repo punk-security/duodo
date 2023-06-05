@@ -2,7 +2,7 @@ from multiprocessing import Pool
 from os import environ, path, makedirs, path, listdir
 import time, datetime, argparse, sys, csv, random, re
 import duo_client
-
+from pathlib import Path
 
 parser = argparse.ArgumentParser(
     prog='Duo Push Notification Tester',
@@ -121,7 +121,7 @@ elif args.resume_from_last:
     for file in files:
         f[str(path.getmtime(p))] = file
 
-    output_file = f[ str(max(f.keys())) ]
+    output_file = "results/" +  f[ str(max(f.keys())) ]
 
 
 elif args.resume_from_file is not None:
@@ -133,6 +133,7 @@ elif args.resume_from_file is not None:
 
 else:
     output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d-%H%M%S") + ".csv"
+    open(output_file, 'w').close()
 
 
 if args.ignore_list is not None:
@@ -365,16 +366,19 @@ def send_notification_query(user_id:str, devices:list, username:str) -> list:
 
 def get_ignore_list() -> list:
     """
-    Gets a list of usernames to ignore from the ignore list
+    Gets a list of user emails to ignore from the ignore list
 
-    :return: List of usernames to ignore when sending out push notifications
+    :return: List of user's emails
     :rtype: list
     """    
     skip_users = []
     with open(args.ignore_list, "r") as file:
         spamreader = csv.reader(file, delimiter=',')
         for row in spamreader:
-            skip_users.append(row[0])
+            try:
+                skip_users.append(row[0])   
+            except IndexError:
+                continue
 
     return skip_users
 
@@ -385,7 +389,7 @@ def filter_users(all_users:list, skip_users:list) -> list:
 
     :param all_users: List containing multiple User objects
     :type all_users: list
-    :param skip_users: List of usernames
+    :param skip_users: List of user emails
     :type skip_users: list
     :return: Filtered users list of objects
     :rtype: list
@@ -397,13 +401,9 @@ def filter_users(all_users:list, skip_users:list) -> list:
         spamreader = csv.reader(f)
         for row in spamreader:
             users_to_remove.append(row[0])
-    # Removes user's we don't want to send notifications to from all_users list
-    for user in skip_users:
-        users_to_remove.append(user)
 
     # Creates a list with the inactive users and ignore list users removed
-    filtered_users = [user for user in all_users if user["status"] == "active" or user["username"] not in users_to_remove]
-
+    filtered_users = [user for user in all_users if user["status"] == "active" and user["email"] not in skip_users and user["username"] not in users_to_remove]
     return filtered_users
 
 
