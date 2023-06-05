@@ -302,6 +302,9 @@ def send_push_notifications(users_list:list):
                 break
 
         result = []
+        for i in unable_to_push:
+            # i[2] is the user's username and i[0] is the user's user_id
+            result +=  [[i[2], i[0], "", "", "\'Unable to push notification\'", str(datetime.datetime.now()), "\n"]]
 
         print("users:", users_to_push)
         if len(users_to_push) > 0:
@@ -313,14 +316,13 @@ def send_push_notifications(users_list:list):
                 exit()
             pass
 
-        for i in unable_to_push:
-            # i[2] is the user's username and i[0] is the user's user_id
-            result +=  [[i[2], i[0], "", "", "\'Unable to push notification\'", str(datetime.datetime.now()), "\n"]]
-
         with open(output_file, "a", newline='\n') as file:
             spamwriter = csv.writer(file, delimiter=',')
             for res in result:
                 spamwriter.writerow(res)
+
+        if len(users_to_push) == 0:
+            continue
 
         if len(keys) != 0:
             print("waiting")
