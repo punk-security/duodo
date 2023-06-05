@@ -1,5 +1,5 @@
 from multiprocessing import Pool
-from os import environ, path, makedirs
+from os import environ, path, makedirs, path, listdir
 import time, datetime, argparse, sys, csv, random, re
 import duo_client
 
@@ -26,12 +26,12 @@ duo_keys.add_argument('--auth-skey', help="Auth API secret key") # secret key
 output_exclusive = parser.add_mutually_exclusive_group(required=False)
 output_exclusive.add_argument('-o', '--output-file', default=None, help='Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv')
 output_exclusive.add_argument('-f', '--resume-from-file', help="Path of file containing results of a previous campaign to use to resume sending push notifications to and updating")
-output_exclusive.add_argument('-r', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results")
+output_exclusive.add_argument('-r', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results folder at the root of this directory")
 
 parser.add_argument('-i', '--ignore-list', help='Path to file of list of usernames to ignore')
 parser.add_argument('-l', '--user-list', action='store_true', default=False, help="Sends push notifications only to specified users. Userlist format is either one of `firstname lastname` or `firstname lastname - phonenumber`")
 parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'")
-parser.add_argument('-g', '--by-group', help="Send push notifications to all users in a specific group")
+parser.add_argument('-g', '--by-groups', help="Send push notifications to all users in specified groups. Groups are separated by a comma e.g. \"group1, group2\"")
 
 parser.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
 
@@ -105,15 +105,32 @@ user_wait = args.user_wait
 
 if args.output_file is not None:
     output_file = args.output_file
-else:
-    output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d-%H%M%S") + ".csv"
 
 # Mutually exclusive resume from last and file, so only 1 can be passed in
-if args.resume_from_last is not None:
-    output_file = args.resume_from_last
+elif args.resume_from_last:
+    p = "results"
+    files = [f for f in listdir(p) if path.isfile(path.join(p, f))]
 
-if args.resume_from_file is not None:
-    output_file = args.resume_from_file
+    if len(files) == 0:
+        print("No files in results folder to resume from, exiting...")
+        exit()
+
+    f = {}
+    for file in files:
+        f[str(path.getmtime(p))] = file
+
+    output_file = f[ str(max(f.keys())) ]
+
+
+elif args.resume_from_file is not None:
+    if path.isfile(args.resume_from_file):
+        output_file = args.resume_from_file
+    else:
+        print("Couldn't find", args.resume_from_file)
+        exit()
+
+else:
+    output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d-%H%M%S") + ".csv"
 
 
 if args.ignore_list is not None:
@@ -140,9 +157,9 @@ def main():
         print("Filtering out Duo users to only get those specified in user list")
         all_users = get_users_from_list(all_users)
 
-    if args.by_group:
+    if args.by_groups:
         print("Getting all users by group")
-        all_users = filter_by_group(all_users)
+        all_users = filter_by_groups(all_users)
 
     print("Filtering Duo users")
     users = filter_users(all_users, skip_users)
@@ -179,7 +196,7 @@ def retrieve_users() -> list:
     return users
 
 
-def filter_by_group(all_users:list) -> list:
+def filter_by_groups(all_users:list) -> list:
     """
     Filters out users from a give list of user objects using 
 
@@ -190,31 +207,32 @@ def filter_by_group(all_users:list) -> list:
     """    
     users = []
 
-    groups = admin_api.get_groups()
-    g = ""
-    for group in groups:
-        if group == args.by_group:
-            g = group
+    # Split up user input
+    g = [group.strip() for group in args.by_groups.split(",")]
 
-    if len(g) == 0:
-        print("Group not found, list of available groups:")
-        for i in groups:
-            print(i["name"])
-        exit()
+    groups_list = admin_api.get_groups()
 
-    try:
-        group_users = admin_api.get_group_users(g["group_id"])
-    except Exception as e:
-        print("Unable to get group", g["name"])
-        print(e)
-        exit()
+    groups_to_use = [group for group in groups_list if group["name"] in g]
 
+
+    if len(groups_to_use) != len(g):
+        print("Not all groups have been found.")
+        print("Continue with the following groups only?")
+        for i in groups_to_use:
+            print(i)
+        p = input("[y/N]")
+        if p == "y":
+            pass
+        else:
+            exit()
+    
     users = []
 
-    for gu in group_users:
-        for user in all_users:
-            if gu["user_id"] == user["user_id"]:
+    for user in all_users:
+        for group in user["groups"]:
+            if group["name"] in groups_to_use:
                 users.append(user)
+                break
 
     return users
 
@@ -375,7 +393,6 @@ def filter_users(all_users:list, skip_users:list) -> list:
         spamreader = csv.reader(f)
         for row in spamreader:
             users_to_remove.append(row[0])
-
     # Removes user's we don't want to send notifications to from all_users list
     for user in skip_users:
         users_to_remove.append(user)
