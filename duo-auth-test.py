@@ -36,8 +36,8 @@ parser.add_argument('-g', '--by-group', help="Send push notifications to all use
 parser.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
 
 # Can manually set environment variables
-environ["admin_ikey"] = "DIOB5RRS192NPGQKX0ZT"
-environ["admin_skey"] = "1BDvVZ5QcZVnQyq4CZTCV9MDeFilk4KOK5NoBHRC"
+#environ["admin_ikey"] = ""
+#environ["admin_skey"] = ""
 #environ["auth_ikey"] = ""
 #environ["auth_skey"] = ""
 
