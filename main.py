@@ -1,8 +1,7 @@
 from multiprocessing import Pool
 from os import environ, path, makedirs, path, listdir
-import time, datetime, argparse, sys, csv, random, re
+import time, datetime, argparse, sys, csv, random, re, shutil
 import duo_client
-from pathlib import Path
 
 parser = argparse.ArgumentParser(
     prog='Duo Push Notification Tester',
@@ -25,27 +24,30 @@ duo_keys.add_argument('--auth-skey', help="Auth API secret key") # secret key
 
 output_exclusive = parser.add_mutually_exclusive_group(required=False)
 output_exclusive.add_argument('-o', '--output-file', default=None, help='Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv')
-output_exclusive.add_argument('-f', '--resume-from-file', help="Path of file containing results of a previous campaign to use to resume sending push notifications to and updating")
-output_exclusive.add_argument('-r', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results folder at the root of this directory")
+output_exclusive.add_argument('-f', '--resume-from-file', help="Path of file containing results of a previous campaign to use to resume sending push notifications to and updating.")
+output_exclusive.add_argument('-r', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results folder at the root of this directory.")
 
-parser.add_argument('-i', '--ignore-list', help='Path to file of list of emails of users to ignore')
-parser.add_argument('-l', '--user-list', action='store_true', default=False, help="Sends push notifications only to specified users. Userlist format is either one of `email` or `email - phonenumber`")
-parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'")
+parser.add_argument('-i', '--ignore-list', help='Path to file of list of emails of users to ignore.')
+parser.add_argument('-l', '--user-list', help="Sends push notifications only to specified users in a provided file. Userlist format is either one of `email` or `email - phonenumber`. E.g. user-list.txt")
+parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'.")
 parser.add_argument('-g', '--by-groups', help="Send push notifications to all users in specified groups. Groups are separated by a comma e.g. \"group1, group2\"")
 
-parser.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
+cmds = parser.add_argument_group("cmds")
+cmds.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
+cmds.add_argument('--empty-results', action="store_true", help="To be used alone, no other commands will be executed. Deletes all files in the results folder.")
 
 # Can manually set environment variables
-#environ["admin_ikey"] = ""
-#environ["admin_skey"] = ""
-#environ["auth_ikey"] = ""
-#environ["auth_skey"] = ""
+environ["admin_ikey"] = "DIOB5RRS192NPGQKX0ZT"
+environ["admin_skey"] = "1BDvVZ5QcZVnQyq4CZTCV9MDeFilk4KOK5NoBHRC"
+environ["auth_ikey"] = "DIMWIQRSRE1SV2E3QJVU"
+environ["auth_skey"] = "BQw1bnlWp6fqFLvBVrmJM40ErWfgsC0RhBtjWUkL"
 
+# Makes a results folder if one doesn't already exist
 makedirs("results", exist_ok=True)
 
 def get_env(key:str) -> str:
     """
-    Attempts to get environment 
+    Attempts to get environment variables.
 
     :param key: _description_
     :type key: str
@@ -59,9 +61,14 @@ def get_env(key:str) -> str:
         exit()
     return var
 
-
 args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
+if args.empty_results:
+    i = input("Delete content of results folder? [y/N]")
+    if i == "y":
+        shutil.rmtree("results")
+        makedirs("results", exist_ok=True)
+    exit()
 
 if args.admin_ikey is not None:
     admin_ikey = args.admin_ikey
@@ -95,7 +102,6 @@ if args.auth_skey is not None:
 else:
     auth_skey = get_env("auth_skey")
     
-
 auth_api = duo_client.Auth(ikey=auth_ikey, skey=auth_skey, host=host)
 
 batch_size = args.batch_size
@@ -105,8 +111,6 @@ user_wait = args.user_wait
 
 if args.output_file is not None:
     output_file = args.output_file
-    open(output_file, 'w').close()
-
 
 # Mutually exclusive resume from last and file, so only 1 can be passed in
 elif args.resume_from_last:
@@ -133,7 +137,6 @@ elif args.resume_from_file is not None:
 
 else:
     output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d-%H%M%S") + ".csv"
-    open(output_file, 'w').close()
 
 
 if args.ignore_list is not None:
@@ -149,31 +152,46 @@ if args.user_list is not None:
 
 def main():
     skip_users = []
-    print("Getting all Duo users from Duo")
-    all_users = retrieve_users()
-
-    if args.ignore_list:
-        print("Getting ignore-list users")
-        skip_users = get_ignore_list()
+    print("Getting all Duo users from Duo.")
+    users = retrieve_users()
 
     if args.user_list:
-        print("Filtering out Duo users to only get those specified in user list")
-        all_users = get_users_from_list(all_users)
+        print("Filtering out Duo users to only get those specified in user list.")
+        users = get_users_from_list(users)
+
+    if len(users) == 0:
+        print("No users will receive push notifications with current parameters provided.")
+        exit()
 
     if args.by_groups:
-        print("Getting all users by group")
-        all_users = filter_by_groups(all_users)
+        print("Getting all users by group.")
+        users = filter_by_groups(users)
 
-    print("Filtering Duo users")
-    users = filter_users(all_users, skip_users)
+    if len(users) == 0:
+        print("No users will receive push notifications with current parameters provided.")
+        exit()
 
-    print("Checking for users with push notifications enabled")
-    pushable_users = check_duo_push(users)
+    if args.ignore_list:
+        print("Getting ignore-list users.")
+        skip_users = get_ignore_list()
+
+    print("Filtering Duo users.")
+    users = filter_users(users, skip_users)
+
+    if len(users) == 0:
+        print("No users will receive push notifications with current parameters provided.")
+        exit()
+
+    if not path.isfile(output_file):
+        open(output_file, 'w').close()
+
+    print("Checking for users with push notifications enabled.")
+    users = check_duo_push(users)
 
     print("Pushing notifications...")
-    send_push_notifications(pushable_users)
+    send_push_notifications(users)
 
-    print("Finished")
+    print("Finished.")
 
 
 def retrieve_users() -> list:
@@ -196,16 +214,20 @@ def retrieve_users() -> list:
         except RuntimeError: 
             break
 
+    if len(users) == 0:
+        print("No users retrieved using parameters provided.")
+        exit()
+
     return users
 
 
 def filter_by_groups(all_users:list) -> list:
     """
-    Filters out users from a give list of user objects using 
+    Filters out users from a give list of user objects using groups provided.
 
-    :param all_users: _description_
+    :param all_users: list of user objects
     :type all_users: list
-    :return: _description_
+    :return: list of user objects who are part of the groups provided 
     :rtype: list
     """    
     users = []
@@ -249,35 +271,54 @@ def get_users_from_list(all_users:list) -> list:
     :return: A list of filtered user objects, containing only the relevant users
     :rtype: list
     """    
-    users = []
     # Gets all users from user list
     try:
         with open(args.user_list, "r") as file:
             spamreader = csv.reader(file, delimiter='-')
-            filtered_users = { row[0] : re.sub('[^\d]', '', row[1]) if len(row) > 1 else None for row in spamreader }
-
+            filtered_users = { row[0].strip() : re.sub('[^\d]', '', row[1]) if len(row) > 1 else None for row in spamreader }
     except FileNotFoundError:
         print(args.user_list, "not found")
         exit()
 
+    filtered_users_keys = list(filtered_users.keys())
     new_users = []
+
     for user in all_users:
-        if user["email"] not in filtered_users.keys():
+        if user["email"] not in filtered_users_keys:
             continue
         
-        phone_number = filtered_users[users["email"]]
+        if len(user["phones"]) == 0:
+            print("No phone numbers associated with", user["email"], ", skipping.")
+            continue
+
+        useable_phones = [phone["number"] for phone in user["phones"] if phone["activated"] and "push" in phone["capabilities"]]
+
+        if len(useable_phones) == 0:
+            print("No phones with push notifications activated for", user["email"], ", skipping.")
+            continue
+
+        phone_number = "+" + filtered_users[user["email"]].strip()
+
+        if phone_number not in useable_phones:
+            print(phone_number)
+            print("Unable to use provided phone number for", user["email"], ", skipping.")
+            continue
 
         if phone_number is None:
-            user["phones"] = random.choice(users["phones"])
+            user["phones"] = [random.choice(user["phones"])]
         else:
-            user["phones"] = [phone for phone in user["phones"] if phone["number"] == phone_number]
+            p = [phone for phone in user["phones"] if phone["number"] == phone_number]
+            if p != phone_number:
+                print("Unable to find given phone number for", user["email"], ", selecting a random phone number instead.")
+                p = random.choice(user["phones"])
+
+            user["phones"] = [p]
 
         new_users.append(user)
 
-    #return filtered_users_details
+    return new_users
 
     
-
 def send_push_notifications(users_list:list):
     """
     Sends a Duo push notification to one of the users' phones.
@@ -307,7 +348,8 @@ def send_push_notifications(users_list:list):
             # i[2] is the user's username and i[0] is the user's user_id
             result +=  [[i[2], i[0], "", "", "\'Unable to push notification\'", str(datetime.datetime.now()), "\n"]]
 
-        print("users:", users_to_push)
+
+        print(users_to_push)
         if len(users_to_push) > 0:
             try:
                 with Pool(batch_size) as p:
@@ -326,16 +368,16 @@ def send_push_notifications(users_list:list):
             continue
 
         if len(keys) != 0:
-            print("waiting")
+            print("Waiting till next batch...")
             time.sleep(time_between) 
-            print("going")
+ 
 
     return
 
 
 def send_notification_query(user_id:str, devices:list, username:str) -> list:
     """
-    Sends a push notification to a user's registered devices, and records the response (Whether the notification was accepted, denied or timed out)
+    Sends a push notification to a user's registered devices, and records the response (Whether the notification was accepted, denied or timed out).
 
     :param user_id: The user_id of the user
     :type user_id: str
@@ -346,7 +388,11 @@ def send_notification_query(user_id:str, devices:list, username:str) -> list:
     """     
 
     for i in range(0, user_pings):
-        res = auth_api.auth("push", user_id=user_id, type=args.push_text, device=devices)
+        try:
+            res = auth_api.auth("push", user_id=user_id, type=args.push_text, device=devices)
+        except Exception as e:
+            res = {'result': '', 'status': 'invalid_request', 'status_msg': 'Unable to ping user'}
+            break
         
         if res["status"] == "fraud":
             break
@@ -366,7 +412,7 @@ def send_notification_query(user_id:str, devices:list, username:str) -> list:
 
 def get_ignore_list() -> list:
     """
-    Gets a list of user emails to ignore from the ignore list
+    Gets a list of user emails to ignore from the ignore list.
 
     :return: List of user's emails
     :rtype: list
@@ -379,7 +425,7 @@ def get_ignore_list() -> list:
                 skip_users.append(row[0])   
             except IndexError:
                 continue
-
+    
     return skip_users
 
 
@@ -397,10 +443,11 @@ def filter_users(all_users:list, skip_users:list) -> list:
     users_to_remove = []
 
     # if output file specified - checks if user has already been used and skips them if they have
-    with open(output_file, 'r') as f:
-        spamreader = csv.reader(f)
-        for row in spamreader:
-            users_to_remove.append(row[0])
+    if args.resume_from_last or args.resume_from_file:
+        with open(output_file, 'r') as f:
+            spamreader = csv.reader(f)
+            for row in spamreader:
+                users_to_remove.append(row[0])
 
     # Creates a list with the inactive users and ignore list users removed
     filtered_users = [user for user in all_users if user["status"] == "active" and user["email"] not in skip_users and user["username"] not in users_to_remove]
@@ -409,7 +456,7 @@ def filter_users(all_users:list, skip_users:list) -> list:
 
 def check_duo_push(users: list) -> dict:
     """
-    Checks to see if user uses Duo Mobile for push notifications. If it's enabled , it's added to a list associated with the user_id
+    Checks to see if user uses Duo Mobile for push notifications. If it's enabled, it's added to a list associated with the user_id.
 
     :param users: A list of user IDs
     :type users: list
@@ -417,19 +464,18 @@ def check_duo_push(users: list) -> dict:
     :rtype: dict
     """    
     users_details = {}
-    for user in users:
-        # Get user's associated phones and checks if push is activated on any of them
-        try:
-            phones = admin_api.get_user_phones(user["user_id"])
-        except Exception as e:
-            print("A problem occurred when trying to get", user["name"], "phone numbers")
-            users_details[user["user_id"]] = {"username": user["username"], "devices": []}
-            continue
 
-        useable_phones = [phone["phone_id"] for phone in phones if phone["activated"] and "push" in phone["capabilities"]]
-        users_details[user["user_id"]] = {"username": user["username"], "devices": useable_phones}
+    for user in users:
+        useable_phones = [phone["phone_id"] for phone in user["phones"] if phone["activated"] and "push" in phone["capabilities"]]
+
+        if len(useable_phones) == 0:
+            print("No useable phones for", user["email"], ". User will not be added to push campaign.")
+        else:
+            users_details[user["user_id"]] = {"username": user["username"], "devices": useable_phones}
+        
 
     return users_details
+
 
 if __name__ == '__main__':
     main()
