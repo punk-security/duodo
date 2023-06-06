@@ -189,6 +189,7 @@ def main():
     users = check_duo_push(users)
 
     print("Pushing notifications...")
+    print("Results will be saved to:", path.abspath(output_file))
     send_push_notifications(users)
 
     print("Finished.")
