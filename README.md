@@ -1,9 +1,19 @@
-Duo push campaign - Duo push notification spammer for testing MFA Auth fatigue
+      ____              __   _____                      _ __       
+     / __ \__  ______  / /__/ ___/___  _______  _______(_) /___  __
+    / /_/ / / / / __ \/ //_/\__ \/ _ \/ ___/ / / / ___/ / __/ / / /
+   / ____/ /_/ / / / / ,<  ___/ /  __/ /__/ /_/ / /  / / /_/ /_/ / 
+  /_/    \__,_/_/ /_/_/|_|/____/\___/\___/\__,_/_/  /_/\__/\__, /  
+                                         PRESENTS         /____/  
+                          Duodo ✨
 
-What this is for:
+# Duo Push Campaign
+
+Duo push notification spammer for testing MFA auth fatigue
+
+### Intro
 This script can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
-- Who'll receieve push notifications. You can either send it to all users assocaited with a Duo account, or customise it - 1 or more Duo groups, a specific lsit of users (from user-list.txt), and include a list of users to ignore.
-- The number of people who recieve the notification at once (batch size)
+- Who'll receive push notifications. You can either send it to all users associated with a Duo account, or customise it - 1 or more Duo groups, a specific list of users (from user-list.txt), and include a list of users to ignore.
+- The number of people who receive the notification at once (batch size)
 - The number of times to send push notifications to each user
 - The time to wait between each push a user receives
 - The time to wait between sending each "batch" of push notifications
@@ -11,16 +21,43 @@ This script can be used to create a customisable "push" campaign for the Duo MFA
 - Resume the campaign from a specific output file
 - Customise the text that appears on the push notification
 
-How to use:
-1. If not passing the keys and hostname as an argument, you'll need to set the environemnt variables `admin_ikey`, `admin_skey` and `host` to the appropriate values. e.g. 
+There are also 2 other options:
+- List all groups you can use when doing the push campaigns based on users in specific groups
+- Empty out the results folder that's created by default. This will ask you if you are sure you want to delete the folder. Any answer other the 'y' (without the quote marks) will not execute the command
+
+
+NOTE: If not passing the API keys as an argument, you'll need to set the environment variables `admin_ikey`, `admin_skey`, `auth_ikey`, `auth_skey` to the appropriate values. e.g. 
 In Windows PowerShell:
     $ENV:ADMIN_IKEY="DIO..."
     $ENV:ADMIN_SKEY="..."
-    $ENV:DUO_HOST="api-....duosecurity.com"
     $ENV:AUTH_IKEY="DIO..."
     $ENV:AUTH_SKEY="DIO..."
 
-How to get the Duo API keys:
+
+### Running Duodo:
+```
+python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "owo whats this?"
+```
+
+### Running Duodo in Docker:
+```shell
+$ENV:ADMIN_IKEY="..."
+$ENV:ADMIN_SKEY="..."
+$ENV:AUTH_IKEY="..."
+$ENV:AUTH_SKEY="..."
+docker run punksecurity/duodo 'hostapi' [commands]
+```
+
+For example:
+```shell
+docker run punksecurity/duodo -e 'host' --admin-ikey '...' --admin-skey '...' --auth-ikey '...' --auth-skey '...' --push-text 'My login test' --output-file 'results/myOutput.csv' 
+```
+
+```shell
+docker run punksecurity/duodo 'host' --push-text 'My login test' --resume-from-last --ignore-list 'ignore-list.csv' --user-list 'user-list.csv' 
+```
+
+### How to get API keys:
 - Log in as an Admin user
 - On the sidebar on the left, go to `Applications`
 - Under Applications, select `Protect an application`
@@ -28,5 +65,3 @@ How to get the Duo API keys:
 - This'll take you to the endpoint's page. Scroll down to `Permissions` and tick `Grant read resource`
 - At the top there'll be the Integration key, Secret key and API Hostname
 
-Duo side:
-This needs both the API's integration key and secret key to use, as well as Duo's API endpoint.
