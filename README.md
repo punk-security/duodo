@@ -68,4 +68,3 @@ docker run punksecurity/duodo 'host' --push-text 'My login test' --resume-from-l
 - Scroll down until you find `Admin API`, then click the protect button on the right.
 - This'll take you to the endpoint's page. Scroll down to `Permissions` and tick `Grant read resource`
 - At the top there'll be the Integration key, Secret key and API Hostname
-
