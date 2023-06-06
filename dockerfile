@@ -18,10 +18,4 @@ WORKDIR /app
 
 COPY . .
 
-# Exports
-ENV ADMIN_IKEY=""
-ENV ADMIN_SKEY=""
-ENV AUTH_IKEY=""
-ENV AUTH_SKEY=""
-
 ENTRYPOINT [ "python3", "/app/main.py" ]
