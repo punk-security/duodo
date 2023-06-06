@@ -30,15 +30,17 @@ There are also 2 other options:
 
 NOTE: If not passing the API keys as an argument, you'll need to set the environment variables `admin_ikey`, `admin_skey`, `auth_ikey`, `auth_skey` to the appropriate values. e.g. 
 In Windows PowerShell:
-    $ENV:ADMIN_IKEY="DIO..."
-    $ENV:ADMIN_SKEY="..."
-    $ENV:AUTH_IKEY="DIO..."
-    $ENV:AUTH_SKEY="DIO..."
+```
+$ENV:ADMIN_IKEY="DIO..."
+$ENV:ADMIN_SKEY="..."
+$ENV:AUTH_IKEY="DIO..."
+$ENV:AUTH_SKEY="DIO..."
+```
 
 
 ### Running Duodo:
 ```
-python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "owo whats this?"
+python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "My test login"
 ```
 
 ### Running Duodo in Docker:
@@ -52,7 +54,7 @@ docker run punksecurity/duodo 'hostapi' [commands]
 
 For example:
 ```shell
-docker run punksecurity/duodo -e 'host' --admin-ikey '...' --admin-skey '...' --auth-ikey '...' --auth-skey '...' --push-text 'My login test' --output-file 'results/myOutput.csv' 
+docker run punksecurity/duodo -e 'host' --admin-ikey '...' --admin-skey '...' --auth-ikey '...' --auth-skey '...' --output-file 'results/myOutput.csv' 
 ```
 
 ```shell
