@@ -44,20 +44,28 @@ python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --pu
 ```
 
 ### Running Duodo in Docker:
-```shell
-$ENV:ADMIN_IKEY="..."
-$ENV:ADMIN_SKEY="..."
-$ENV:AUTH_IKEY="..."
-$ENV:AUTH_SKEY="..."
+```
+Windows Powershell:
+    $ENV:ADMIN_IKEY="..."
+    $ENV:ADMIN_SKEY="..."
+    $ENV:AUTH_IKEY="..."
+    $ENV:AUTH_SKEY="..."
+    
+Windows CMD:
+    set ADMIN_IKEY="..."
+    set ADMIN_SKEY="..."
+    set AUTH_IKEY="..."
+    set AUTH_SKEY="..."
+
 docker run punksecurity/duodo 'hostapi' [commands]
 ```
 
 For example:
-```shell
+```
 docker run punksecurity/duodo -e 'host' --admin-ikey '...' --admin-skey '...' --auth-ikey '...' --auth-skey '...' --output-file 'results/myOutput.csv' 
 ```
 
-```shell
+```
 docker run punksecurity/duodo 'host' --push-text 'My login test' --resume-from-last --ignore-list 'ignore-list.csv' --user-list 'user-list.csv' 
 ```
 
