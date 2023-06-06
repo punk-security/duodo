@@ -36,12 +36,6 @@ cmds = parser.add_argument_group("cmds")
 cmds.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
 cmds.add_argument('--empty-results', action="store_true", help="To be used alone, no other commands will be executed. Deletes all files in the results folder.")
 
-# Can manually set environment variables
-environ["admin_ikey"] = "DIOB5RRS192NPGQKX0ZT"
-environ["admin_skey"] = "1BDvVZ5QcZVnQyq4CZTCV9MDeFilk4KOK5NoBHRC"
-environ["auth_ikey"] = "DIMWIQRSRE1SV2E3QJVU"
-environ["auth_skey"] = "BQw1bnlWp6fqFLvBVrmJM40ErWfgsC0RhBtjWUkL"
-
 # Makes a results folder if one doesn't already exist
 makedirs("results", exist_ok=True)
 
