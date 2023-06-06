@@ -1,0 +1,6 @@
+results/*
+__pycache__/
+.vscode
+.git
+.csv
+.json
