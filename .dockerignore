@@ -1,9 +1,5 @@
 __pycache__/
-/*.csv
-/*.json
-/*.html
-!template.html
-testing/
+results/*
 .vscode
 .git
 .csv

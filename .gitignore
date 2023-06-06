@@ -1,3 +1,6 @@
 results/*
-.json
+__pycache__/
+.vscode
+.git
 .csv
+.json
