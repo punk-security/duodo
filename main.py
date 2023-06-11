@@ -1,40 +1,10 @@
+import argparsing
+
 from multiprocessing import Pool
 from os import environ, path, makedirs, path, listdir
-import time, datetime, argparse, sys, csv, random, re, shutil
+import time, datetime, csv, random, re
 import duo_client
 
-parser = argparse.ArgumentParser(
-    prog='Duo Push Notification Tester',
-    description='Sends push notifications to all specified users, staggered over the specified period of time',
-)
-
-user_pings_wait = parser.add_argument_group("user_pings_wait")
-user_pings_wait.add_argument('-w', '--user-wait', type=int, default=60, help='The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1') # number of users to ping at once
-user_pings_wait.add_argument('-u', '--user-pings', type=int, default=1, help='The number of times to send a user a push notification in a row. Defaults to 1') # number of users to ping at once
-
-parser.add_argument('-b', '--batch-size', type=int, default=1, help='The number of users to send push notifications to at once') # number of users to ping at once
-parser.add_argument('-t', '--time-between', type=int, default=300, help='The amount of time in seconds to wait between each batch of push notifications') # defaults to 5 minutes
-
-duo_keys = parser.add_argument_group("duo_keys")
-duo_keys.add_argument('host', help="API host url. E.g. api-1234abcd.duosecurity.com")
-duo_keys.add_argument('--admin-ikey', help="Admin API integration key") # integration key
-duo_keys.add_argument('--admin-skey', help="Admin API secret key") # secret key
-duo_keys.add_argument('--auth-ikey', help="Auth API integration key") # integration key
-duo_keys.add_argument('--auth-skey', help="Auth API secret key") # secret key
-
-output_exclusive = parser.add_mutually_exclusive_group(required=False)
-output_exclusive.add_argument('-o', '--output-file', default=None, help='Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv')
-output_exclusive.add_argument('-f', '--resume-from-file', help="Path of file containing results of a previous campaign to use to resume sending push notifications to and updating.")
-output_exclusive.add_argument('-r', '--resume-from-last', action='store_true', default=False, help="Resumes sending push notifications from the latest file produced in results folder at the root of this directory.")
-
-parser.add_argument('-i', '--ignore-list', help='Path to file of list of emails of users to ignore.')
-parser.add_argument('-l', '--user-list', help="Sends push notifications only to specified users in a provided file. Userlist format is either one of `email` or `email - phonenumber`. E.g. user-list.txt")
-parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'.")
-parser.add_argument('-g', '--by-groups', help="Send push notifications to all users in specified groups. Groups are separated by a comma e.g. \"group1, group2\"")
-
-cmds = parser.add_argument_group("cmds")
-cmds.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
-cmds.add_argument('--empty-results', action="store_true", help="To be used alone, no other commands will be executed. Deletes all files in the results folder.")
 
 # Makes a results folder if one doesn't already exist
 makedirs("results", exist_ok=True)
@@ -48,33 +18,21 @@ def get_env(key:str) -> str:
     :return: _description_
     :rtype: str
     """    
-    try:
-        var = environ[key.upper()]
-    except KeyError:
-        print("--", key.replace("_", "-"),"was not provided and isn't in environment variables. Please specify at least one.")
-        exit()
-    return var
+    var = environ[key.upper()]
 
-args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+args = argparsing.parse_args()
 
-if args.empty_results:
-    i = input("Delete content of results folder? [y/N]")
-    if i == "y":
-        shutil.rmtree("results")
-        makedirs("results", exist_ok=True)
-    exit()
+host = args.host
 
 if args.admin_ikey is not None:
-    admin_ikey = args.admin_ikey
+    admin_ikey = args.admin_ikey 
 else:
     admin_ikey = get_env("admin_ikey")
 
 if args.admin_skey is not None:
-    admin_skey = args.admin_skey
+    admin_skey = args.admin_skey 
 else:
     admin_skey = get_env("admin_skey")
-
-host = args.host
 
 admin_api = duo_client.Admin(ikey=admin_ikey, skey=admin_skey, host=host)
 
@@ -86,17 +44,17 @@ if args.list_groups:
         print("-", group["name"])
     exit()
 
+auth_api = duo_client.Auth(ikey=auth_ikey, skey=auth_skey, host=host)
+
 if args.auth_ikey is not None:
-    auth_ikey = args.auth_ikey
+    auth_ikey = args.auth_ikey 
 else:
     auth_ikey = get_env("auth_ikey")
 
 if args.auth_skey is not None:
-    auth_skey = args.auth_skey
+    auth_skey = args.auth_skey 
 else:
     auth_skey = get_env("auth_skey")
-    
-auth_api = duo_client.Auth(ikey=auth_ikey, skey=auth_skey, host=host)
 
 batch_size = args.batch_size
 time_between = args.time_between
@@ -131,17 +89,6 @@ elif args.resume_from_file is not None:
 
 else:
     output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d-%H%M%S") + ".csv"
-
-
-if args.ignore_list is not None:
-    if not path.exists(args.ignore_list):
-        print(str(args.ignore_list), "not found.")
-        exit()
-
-if args.user_list is not None:
-    if not path.exists(args.user_list):
-        print(str(args.args.user_list), "not found.")
-        exit()
 
 
 def main():

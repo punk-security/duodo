@@ -31,10 +31,10 @@ There are also 2 other options:
 NOTE: If not passing the API keys as an argument, you'll need to set the environment variables `admin_ikey`, `admin_skey`, `auth_ikey`, `auth_skey` to the appropriate values. e.g. 
 In Windows PowerShell:
 ```
-$ENV:ADMIN_IKEY="DIO..."
+$ENV:ADMIN_IKEY="..."
 $ENV:ADMIN_SKEY="..."
-$ENV:AUTH_IKEY="DIO..."
-$ENV:AUTH_SKEY="DIO..."
+$ENV:AUTH_IKEY="..."
+$ENV:AUTH_SKEY="..."
 ```
 
 
