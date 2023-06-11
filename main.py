@@ -44,8 +44,6 @@ if args.list_groups:
         print("-", group["name"])
     exit()
 
-auth_api = duo_client.Auth(ikey=auth_ikey, skey=auth_skey, host=host)
-
 if args.auth_ikey is not None:
     auth_ikey = args.auth_ikey 
 else:
@@ -55,6 +53,8 @@ if args.auth_skey is not None:
     auth_skey = args.auth_skey 
 else:
     auth_skey = get_env("auth_skey")
+
+auth_api = duo_client.Auth(ikey=auth_ikey, skey=auth_skey, host=host)
 
 batch_size = args.batch_size
 time_between = args.time_between
