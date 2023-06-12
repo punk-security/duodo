@@ -94,10 +94,8 @@ def parse_args():
     if args.auth_skey is None and check_env("auth_skey"):
         parser.error("--auth_skey was not provided and isn't in environment variables. Please specify at least one.")
 
-    elif args.resume_from_file is not None:
-        if path.isfile(args.resume_from_file):
-            output_file = args.resume_from_file
-        else:
+    if args.resume_from_file is not None:
+        if not path.isfile(args.resume_from_file):
             parser.error("Couldn't find", args.resume_from_file)
 
     if args.ignore_list is not None:

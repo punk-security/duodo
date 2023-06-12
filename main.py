@@ -23,7 +23,7 @@ def get_env(key:str) -> str:
     try:   
         return environ[key.upper()]
     except Exception as e:
-        logging.exception("Unable to find environment variable for", key.upper(), " Error:", e)
+        logging.exception("Unable to find environment variable for %s. Error: %s".format(key.upper(), e))
         exit()
 
 
@@ -42,14 +42,17 @@ else:
 try:
     admin_api = duo_client.Admin(ikey=admin_ikey, skey=admin_skey, host=host)
 except Exception as e:
-    logging.exception("Unable to connect to Admin endpoint. Error:", e)
+    logging.exception("Unable to connect to Admin endpoint. Error: %s".format(e))
     exit()
 
 logging.info("Set Admin API")
 
 # List groups
 if args.list_groups:
-    groups = admin_api.get_groups()
+    try:
+        groups = admin_api.get_groups()
+    except Exception as e:
+        logging.error("Unable to get groups. Error: %s".format(e))
     print("List of groups:")
     for group in groups:
         print("-", group["name"])
@@ -68,7 +71,7 @@ else:
 try:
     auth_api = duo_client.Auth(ikey=auth_ikey, skey=auth_skey, host=host)
 except Exception as e:
-    logging.exception("Unable to connect to Auth endpoint. Error:", e)
+    logging.exception("Unable to connect to Auth endpoint. Error: %s".format(e))
     exit()
 logging.info("Set Auth API")
 
@@ -99,13 +102,13 @@ elif args.resume_from_file is not None:
     if path.isfile(args.resume_from_file):
         output_file = args.resume_from_file
     else:
-        logging.error("Couldn't find", args.resume_from_file)
+        logging.error("Couldn't find %s".format(args.resume_from_file))
         exit()
 
 else:
     output_file = "results/results" + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d-%H%M%S") + ".csv"
 
-logging.info("Set output file to", output_file)
+logging.info("Set output file to %s".format(output_file))
 
 
 def main():
@@ -147,7 +150,7 @@ def main():
     users = check_duo_push(users)
 
     logging.info("Pushing notifications...")
-    logging.info("Results will be saved to:", path.abspath(output_file))
+    logging.info("Results will be saved to: %s".format(path.abspath(output_file)))
     send_push_notifications(users)
 
     logging.info("Finished")
@@ -164,7 +167,7 @@ def retrieve_users() -> list:
     try:
         users = admin_api.get_users(limit=300)
     except Exception as e:
-        logging.error("Unable to get users from admin endpoint. Error:", e)
+        logging.error("Unable to get users from admin endpoint. Error: %s".format(e))
         exit()
     logging.info("Getting all users")
 
@@ -176,7 +179,7 @@ def retrieve_users() -> list:
                 break
             users += res
         except Exception as e: 
-            logging.error("Error when calling admin get_users() ")
+            logging.error("Error when calling admin get_users(). Error: %s".format(e))
             break
 
     if len(users) == 0:
@@ -203,7 +206,7 @@ def filter_by_groups(all_users:list) -> list:
     try:
         groups_list = admin_api.get_groups()
     except Exception as e:
-        logging.error("Unable to get groups from endpoint. Error:", e)
+        logging.error("Unable to get groups from endpoint. Error: %s".format(e))
         exit()
 
     logging.info("Getting all groups")
@@ -248,7 +251,7 @@ def get_users_from_list(all_users:list) -> list:
             spamreader = csv.reader(file, delimiter='-')
             filtered_users = { row[0].strip() : re.sub('[^\d]', '', row[1]) if len(row) > 1 else None for row in spamreader }
     except FileNotFoundError:
-        logging.error(args.user_list, "not found")
+        logging.error("%s not found".format(args.user_list))
         exit()
 
     filtered_users_keys = list(filtered_users.keys())
@@ -259,19 +262,19 @@ def get_users_from_list(all_users:list) -> list:
             continue
         
         if len(user["phones"]) == 0:
-            logging.info("No phone numbers associated with", user["email"], ", skipping.")
+            logging.info("No phone numbers associated with %s. Skipping.".format( user["email"]))
             continue
 
         useable_phones = [phone["number"] for phone in user["phones"] if phone["activated"] and "push" in phone["capabilities"]]
 
         if len(useable_phones) == 0:
-            logging.warning("No phones with push notifications activated for", user["email"], ", skipping.")
+            logging.warning("No phones with push notifications activated for %s. Skipping.".format(user["email"]))
             continue
 
         phone_number = "+" + filtered_users[user["email"]].strip()
 
         if phone_number not in useable_phones:
-            logging.warning("Unable to use provided phone -", phone_number,"- number for", user["email"], ", skipping.")
+            logging.warning("Unable to use provided phone - %s - number for %s. Skipping.".format(phone_number, user["email"]))
             continue
 
         if phone_number is None:
@@ -279,7 +282,7 @@ def get_users_from_list(all_users:list) -> list:
         else:
             p = [phone for phone in user["phones"] if phone["number"] == phone_number]
             if p != phone_number:
-                logging.warning("Unable to find given phone number for", user["email"], ", selecting a random phone number instead.")
+                logging.warning("Unable to find given phone number for %s. Selecting a random phone number instead.".format(user["email"]))
                 p = random.choice(user["phones"])
 
             user["phones"] = [p]
@@ -337,7 +340,7 @@ def send_push_notifications(users_list:list):
             continue
 
         if len(keys) != 0:
-            logging.info("Waiting", time_between," seconds to send next batch...")
+            logging.info("Waiting %s seconds to send next batch...".format(time_between))
             time.sleep(time_between) 
  
     return
@@ -438,7 +441,7 @@ def check_duo_push(users: list) -> dict:
         useable_phones = [phone["phone_id"] for phone in user["phones"] if phone["activated"] and "push" in phone["capabilities"]]
 
         if len(useable_phones) == 0:
-            logging.warning("No useable phones for", user["email"], ". User will not be added to push campaign.")
+            logging.warning("No useable phones for %s. User will not be added to push campaign.".format(user["email"]))
         else:
             users_details[user["user_id"]] = {"username": user["username"], "devices": useable_phones}
         
