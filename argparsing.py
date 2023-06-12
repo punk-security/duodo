@@ -83,16 +83,16 @@ def parse_args():
         exit()
 
     if args.admin_ikey is None and check_env("admin_ikey"):
-        parser.error("--", args.admin_ikey.replace("_", "-"),"was not provided and isn't in environment variables. Please specify at least one.")
+        parser.error("--admin-ikey was not provided and isn't in environment variables. Please specify at least one.")
 
     if args.admin_skey is None and check_env("admin_skey"):
-        parser.error("--", args.admin_skey.replace("_", "-"),"was not provided and isn't in environment variables. Please specify at least one.")
+        parser.error("--admin_skey was not provided and isn't in environment variables. Please specify at least one.")
 
     if args.auth_ikey is None and check_env("auth_ikey"):
-        parser.error("--", args.auth_ikey.replace("_", "-"),"was not provided and isn't in environment variables. Please specify at least one.")
+        parser.error("--auth_ikey was not provided and isn't in environment variables. Please specify at least one.")
 
     if args.auth_skey is None and check_env("auth_skey"):
-        parser.error("--", args.auth_ikey.replace("_", "-"),"was not provided and isn't in environment variables. Please specify at least one.")
+        parser.error("--auth_skey was not provided and isn't in environment variables. Please specify at least one.")
 
     elif args.resume_from_file is not None:
         if path.isfile(args.resume_from_file):
