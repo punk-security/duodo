@@ -8,8 +8,16 @@ import duo_client
 
 # Makes a results folder if one doesn't already exist
 makedirs("results", exist_ok=True)
+makedirs("logs", exist_ok=True)
 
 args = argparsing.parse_args()
+
+logging.basicConfig(
+    filename="logs/log"+str(datetime.datetime.now().strftime("%Y%m%d%H%M%S")),
+    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s - %(message)s',
+    datefmt='%H:%M:%S',
+    level=logging.DEBUG
+)
 
 def get_env(key:str) -> str:
     """
@@ -56,6 +64,7 @@ if args.list_groups:
     print("List of groups:")
     for group in groups:
         print("-", group["name"])
+    logging.info("Listed groups")
     exit()
 
 if args.auth_ikey is not None:
