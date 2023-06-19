@@ -31,3 +31,4 @@ jobs:
             --tag docker.io/punksecurity/duodo:${{ steps.version.outputs.version }} \
             --tag docker.io/punksecurity/duodo:latest \
             --platform linux/amd64
+            
