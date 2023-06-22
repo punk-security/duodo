@@ -8,11 +8,10 @@
                           Duodo ✨
 ```
 
-# Duo Push Campaign
-
+# Duodo
 Duo push notification spammer for testing MFA auth fatigue
 
-### Intro
+## Intro
 This script can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
 - Who'll receive push notifications. You can either send it to all users associated with a Duo account, or customise it - 1 or more Duo groups, a specific list of users (from user-list.txt), and include a list of users to ignore.
 - The number of people who receive the notification at once (batch size)
@@ -29,20 +28,7 @@ There are also 2 other options:
 
 
 NOTE: If not passing the API keys as an argument, you'll need to set the environment variables `admin_ikey`, `admin_skey`, `auth_ikey`, `auth_skey` to the appropriate values. e.g. 
-In Windows PowerShell:
-```
-$ENV:ADMIN_IKEY="DIO..."
-$ENV:ADMIN_SKEY="..."
-$ENV:AUTH_IKEY="DIO..."
-$ENV:AUTH_SKEY="DIO..."
-```
 
-### Running Duodo:
-```
-python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "My test login"
-```
-
-### Running Duodo in Docker:
 ```
 Windows Powershell:
     $ENV:ADMIN_IKEY="..."
@@ -51,27 +37,145 @@ Windows Powershell:
     $ENV:AUTH_SKEY="..."
     
 Windows CMD:
-    set ADMIN_IKEY="..."
-    set ADMIN_SKEY="..."
-    set AUTH_IKEY="..."
-    set AUTH_SKEY="..."
+    set VAR_NAME="..."
+    ...
 
-docker run punksecurity/duodo 'hostapi' [commands]
-```
-
-For example:
-```
-docker run punksecurity/duodo -e 'host' --admin-ikey '...' --admin-skey '...' --auth-ikey '...' --auth-skey '...' --output-file 'results/myOutput.csv' 
+Linux CLI:
+    export VAR_NAME="..."
+    ...
 ```
 
+### Requirements
+This tool has been tested in Python 3.11.
+To install the required modules, in the root of this directory run
 ```
-docker run punksecurity/duodo 'host' --push-text 'My login test' --resume-from-last --ignore-list 'ignore-list.csv' --user-list 'user-list.csv' 
+pip install -r requirements.txt
 ```
 
-### How to get API keys:
+## How to get API keys:
 - Log in as an Admin user
 - On the sidebar on the left, go to `Applications`
 - Under Applications, select `Protect an application`
 - Scroll down until you find `Admin API`, then click the protect button on the right.
 - This'll take you to the endpoint's page. Scroll down to `Permissions` and tick `Grant read resource`
 - At the top there'll be the Integration key, Secret key and API Hostname
+
+
+## Running Duodo locally:
+Duodo can be run both locally and in Docker.
+
+To run Duodo locally, you'll need to install the dependencies in the requirements.txt by running the following command:
+```
+pip install -r requirements.txt
+```
+
+Then, Duodo can be run using:
+```
+python .\main.py host [options]
+```
+
+For example:
+```
+python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "My test push"
+```
+
+## Running Duodo in Docker:
+You can run Duodo in docker by either passing the API keys in  each time, or setting them as environment variables.
+
+Normal:
+```
+docker run punksecurity/duodo "host" [api keys] [commands]
+```
+
+Passing environment variables:
+```
+docker run punksecurity/duodo "host" [commands] -e ADMIN_IKEY="" ADMIN_SKEY="" AUTH_IKEY="" AUTH_SKEY=""
+```
+Passing in the API keys as environment variables allows you to rerun the container again without having to pass them in.
+
+
+For example:
+```
+docker exec <container_id> "host"
+```
+
+
+## Resume a campaign
+### Locally
+To resume a campaign running locally, you can run...
+```
+python3 main.py "host" --resume-from-last
+```
+or
+```
+python3 main.py "host" --resume-from-file "results/file.csv"
+```
+
+### Docker
+If you need to resume a Duo push campaign and you're using Docker, you can run:
+```
+docker exec "host" --resume-from-last
+```
+
+## Get your results
+Locally, you can get your results from the results folder in the root of the Duodo folder.
+```
+Duodo
+|- results
+    |- results12345.csv
+```
+
+To get your results out of Docker:
+```
+docker cp <image> 
+```
+
+
+# Full Usage
+```
+usage: 
+    main.py host "<host api url>" [options]
+
+options:
+  -h, --help            show this help message and exit
+  -b BATCH_SIZE, --batch-size BATCH_SIZE
+                        The number of users to send push notifications to at once
+  -t TIME_BETWEEN, --time-between TIME_BETWEEN
+                        The amount of time in seconds to wait between each batch of push notifications
+  -o OUTPUT_FILE, --output-file OUTPUT_FILE
+                        Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv
+  -f RESUME_FROM_FILE, --resume-from-file RESUME_FROM_FILE
+                        Path of file containing results of a previous campaign to use to resume sending push notifications to and updating.
+  -r, --resume-from-last
+                        Resumes sending push notifications from the latest file produced in results folder at the root of this directory.
+  -i IGNORE_LIST, --ignore-list IGNORE_LIST
+                        Path to file of list of emails of users to ignore.
+  -l USER_LIST, --user-list USER_LIST
+                        Sends push notifications only to specified users in a provided file. Userlist format is either one of `email` or `email - phonenumber`. E.g. user-list.txt
+  -p PUSH_TEXT, --push-text PUSH_TEXT
+                        Text to display in push notification. Defaults to 'Login'.
+  -g BY_GROUPS, --by-groups BY_GROUPS
+                        Send push notifications to all users in specified groups. Groups are separated by a comma e.g. "group1, group2"
+
+user_pings_wait:
+  -w USER_WAIT, --user-wait USER_WAIT
+                        The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to      
+                        timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1
+  -u USER_PINGS, --user-pings USER_PINGS
+                        The number of times to send a user a push notification in a row. Defaults to 1
+
+duo_keys:
+  host                  API host url. E.g. api-1234abcd.duosecurity.com
+  --admin-ikey ADMIN_IKEY
+                        Admin API integration key
+  --admin-skey ADMIN_SKEY
+                        Admin API secret key
+  --auth-ikey AUTH_IKEY
+                        Auth API integration key
+  --auth-skey AUTH_SKEY
+                        Auth API secret key
+
+cmds:
+  --list-groups         To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.
+  --empty-results       To be used alone, no other commands will be executed. Deletes all files in the results folder.
+```
