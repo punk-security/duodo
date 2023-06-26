@@ -79,10 +79,20 @@ or
 docker exec <container_id> "host" [api keys]
 ```
 
+### Getting your results
+To get your results out of Docker, run:
+```
+docker cp 'container':/app/results.csv /host/path/target
+```
+
 ### Resume Campaign
 If you need to resume a Duo push campaign, you can run:
 ```
-docker exec "host" --resume-from-last
+docker run -v /results/on/host:/app/results [image name] [options] --resume-from-last
+```
+or
+```
+docker run -v /results/on/host:/app/results [image name] [options] --resume-from-file "/app/results/[resultsfile].csv"
 ```
 
 
@@ -104,6 +114,14 @@ For example:
 py main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "My test push"
 ```
 
+## Get your results
+You can get your results from the results folder in the root of the Duodo folder.
+```
+Duodo
+|- results
+    |- results12345.csv
+```
+
 ### Resume a campaign
 To resume a campaign running locally, you can run:
 ```
@@ -112,20 +130,6 @@ py main.py "host" --resume-from-last
 or
 ```
 py main.py "host" --resume-from-file "results/file.csv"
-```
-
-## Get your results
-To get your results out of Docker, run:
-```
-docker cp 'container':/app/results.csv /host/path/target
-```
-
-
-Locally, you can get your results from the results folder in the root of the Duodo folder.
-```
-Duodo
-|- results
-    |- results12345.csv
 ```
 
 # Full Usage
