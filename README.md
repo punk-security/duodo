@@ -135,15 +135,32 @@ docker cp 'container':/app/results.csv /host/path/target
 
 # Full Usage
 ```
-usage: 
-    main.py host "<host api url>" [options]
+usage: py main.py "api-1234abcd.duosecurity.com" [options]
+
+Sends push notifications to all specified users, staggered over the specified period of time
+
+positional arguments:
+  host                  API host url. E.g. api-1234abcd.duosecurity.com
 
 options:
   -h, --help            show this help message and exit
+  -w USER_WAIT, --user-wait USER_WAIT
+                        The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to      
+                        timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1
+  -u USER_PINGS, --user-pings USER_PINGS
+                        The number of times to send a user a push notification in a row. Defaults to 1
   -b BATCH_SIZE, --batch-size BATCH_SIZE
                         The number of users to send push notifications to at once
   -t TIME_BETWEEN, --time-between TIME_BETWEEN
                         The amount of time in seconds to wait between each batch of push notifications
+  --admin-ikey ADMIN_IKEY
+                        Admin API integration key. Only required if ADMIN_IKEY environment variable not set.
+  --admin-skey ADMIN_SKEY
+                        Admin API secret key. Only required if ADMIN_SKEY environment variable not set.
+  --auth-ikey AUTH_IKEY
+                        Auth API integration key. Only required if AUTH_IKEY environment variable not set.
+  --auth-skey AUTH_SKEY
+                        Auth API secret key. Only required if AUTH_SKEY environment variable not set.
   -o OUTPUT_FILE, --output-file OUTPUT_FILE
                         Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv
   -f RESUME_FROM_FILE, --resume-from-file RESUME_FROM_FILE
@@ -158,20 +175,6 @@ options:
                         Text to display in push notification. Defaults to 'Login'.
   -g BY_GROUPS, --by-groups BY_GROUPS
                         Send push notifications to all users in specified groups. Groups are separated by a comma e.g. "group1, group2"
-  -w USER_WAIT, --user-wait USER_WAIT
-                        The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to      
-                        timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1
-  -u USER_PINGS, --user-pings USER_PINGS
-                        The number of times to send a user a push notification in a row. Defaults to 1
-  host                  API host url. E.g. api-1234abcd.duosecurity.com
-  --admin-ikey ADMIN_IKEY
-                        Admin API integration key. Only required if ADMIN_IKEY environment variable not set.
-  --admin-skey ADMIN_SKEY
-                        Admin API secret key
-  --auth-ikey AUTH_IKEY
-                        Auth API integration key
-  --auth-skey AUTH_SKEY
-                        Auth API secret key
   --list-groups         To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.
   --empty-results       To be used alone, no other commands will be executed. Deletes all files in the results folder.
 ```
