@@ -13,13 +13,6 @@ This tool is designed to test user MFA fatigue when continuously receiving unsol
 
 Duodo allows you to create customisable MFA push campaigns, allowing you to use to target only specific users and numbers, or Duo groups. You can also use an ignore list by itself, or in conjunction with these other options.
 
-### Requirements
-This tool has been tested in Python 3.11.
-To install the required modules, in the root of this directory run
-```
-pip install -r requirements.txt
-```
-
 ## Intro
 This tool can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
 - Who'll receive push notifications. You can either send it to all users associated with a Duo account, or customise it - 1 or more Duo groups, a specific list of users (from user-list.txt), and include a list of users to ignore.
@@ -88,9 +81,11 @@ docker exec <container_id> "host" [api keys]
 
 
 ## Running Duodo locally:
-Duodo can be run both locally and in Docker.
+Duodo can also be run locally.
 
-To run Duodo locally, you'll need to install the dependencies in the requirements.txt by running the following command:
+This tool has been tested with Python 3.11.
+
+You'll need to install the dependencies in the requirements.txt by running the following command:
 ```
 pip install -r requirements.txt
 ```
