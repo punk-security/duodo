@@ -9,12 +9,9 @@
 ```
 
 # Duodo
-This tool is designed to test user fatigue when continuously receiving unsolicited push notifications for Duo MFA. 
+This tool is designed to test user MFA fatigue when continuously receiving unsolicited push notifications for Duo MFA. You can test how many of your users will accept unsolicited push notifications.
 
-Thee number of push notifications received an frequency can be adjusted
-
-- elaborate, what it does and what problem it solves
-- test users to see how many would accept an unsolicited duo prompt
+Duodo allows you to create customisable MFA push campaigns, allowing you to use to target only specific users and numbers, or Duo groups. You can also use an ignore list by itself, or in conjunction with these other options.
 
 ### Requirements
 This tool has been tested in Python 3.11.
