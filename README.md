@@ -70,15 +70,6 @@ docker run punksecurity/duodo "host" [commands] -e ADMIN_IKEY="" ADMIN_SKEY="" A
 Passing in the API keys as environment variables allows you to rerun the container again without having to pass them in.
 
 
-For example:
-```
-docker exec <container_id> "host"
-```
-or
-```
-docker exec <container_id> "host" [api keys]
-```
-
 ### Getting your results
 To get your results out of Docker, run:
 ```
@@ -94,7 +85,7 @@ or
 ```
 docker run -v /results/on/host:/app/results [image name] [options] --resume-from-file "/app/results/[resultsfile].csv"
 ```
-
+`You will need to pass either the API keys or environment variables again.`
 
 ## Running Duodo locally:
 Duodo can also be run locally, and has been tested with Python 3.11.
