@@ -8,19 +8,17 @@ parser = argparse.ArgumentParser(
     description='Sends push notifications to all specified users, staggered over the specified period of time',
 )
 
-user_pings_wait = parser.add_argument_group("user_pings_wait")
-user_pings_wait.add_argument('-w', '--user-wait', type=int, default=60, help='The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1') # number of users to ping at once
-user_pings_wait.add_argument('-u', '--user-pings', type=int, default=1, help='The number of times to send a user a push notification in a row. Defaults to 1') # number of users to ping at once
+parser.add_argument('-w', '--user-wait', type=int, default=60, help='The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1') # number of users to ping at once
+parser.add_argument('-u', '--user-pings', type=int, default=1, help='The number of times to send a user a push notification in a row. Defaults to 1') # number of users to ping at once
 
 parser.add_argument('-b', '--batch-size', type=int, default=1, help='The number of users to send push notifications to at once') # number of users to ping at once
 parser.add_argument('-t', '--time-between', type=int, default=300, help='The amount of time in seconds to wait between each batch of push notifications') # defaults to 5 minutes
 
-duo_keys = parser.add_argument_group("duo_keys")
-duo_keys.add_argument('host', help="API host url. E.g. api-1234abcd.duosecurity.com")
-duo_keys.add_argument('--admin-ikey', help="Admin API integration key") # integration key
-duo_keys.add_argument('--admin-skey', help="Admin API secret key") # secret key
-duo_keys.add_argument('--auth-ikey', help="Auth API integration key") # integration key
-duo_keys.add_argument('--auth-skey', help="Auth API secret key") # secret key
+parser.add_argument('host', help="API host url. E.g. api-1234abcd.duosecurity.com")
+parser.add_argument('--admin-ikey', help="Admin API integration key. Only required if ADMIN_IKEY environment variable not set.") # integration key
+parser.add_argument('--admin-skey', help="Admin API secret key. Only required if ADMIN_SKEY environment variable not set.") # secret key
+parser.add_argument('--auth-ikey', help="Auth API integration key.  Only required if AUTH_IKEY environment variable not set.") # integration key
+parser.add_argument('--auth-skey', help="Auth API secret key.  Only required if AUTH_SKEY environment variable not set.") # secret key
 
 output_exclusive = parser.add_mutually_exclusive_group(required=False)
 output_exclusive.add_argument('-o', '--output-file', default=None, help='Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv')
@@ -32,9 +30,8 @@ parser.add_argument('-l', '--user-list', help="Sends push notifications only to 
 parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'.")
 parser.add_argument('-g', '--by-groups', help="Send push notifications to all users in specified groups. Groups are separated by a comma e.g. \"group1, group2\"")
 
-cmds = parser.add_argument_group("cmds")
-cmds.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
-cmds.add_argument('--empty-results', action="store_true", help="To be used alone, no other commands will be executed. Deletes all files in the results folder.")
+parser.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
+parser.add_argument('--empty-results', action="store_true", help="To be used alone, no other commands will be executed. Deletes all files in the results folder.")
 
 # Makes a results folder if one doesn't already exist
 makedirs("results", exist_ok=True)

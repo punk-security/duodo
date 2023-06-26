@@ -10,6 +10,8 @@
 
 # Duodo
 Duo push notification spammer for testing MFA auth fatigue
+- elaborate, what it does and what problem it solves
+- test users to see how many would accept an unsolicited duo prompt
 
 ## Intro
 This script can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
@@ -71,7 +73,7 @@ pip install -r requirements.txt
 
 Then, Duodo can be run using:
 ```
-python .\main.py host [options]
+python .\main.py "api-1234abcd.duosecurity.com" [options]
 ```
 
 For example:
@@ -127,7 +129,7 @@ Duodo
 
 To get your results out of Docker:
 ```
-docker cp <image> 
+docker cp 'container':/app/results.csv /host/path/target
 ```
 
 
@@ -156,26 +158,20 @@ options:
                         Text to display in push notification. Defaults to 'Login'.
   -g BY_GROUPS, --by-groups BY_GROUPS
                         Send push notifications to all users in specified groups. Groups are separated by a comma e.g. "group1, group2"
-
-user_pings_wait:
   -w USER_WAIT, --user-wait USER_WAIT
                         The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to      
                         timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1
   -u USER_PINGS, --user-pings USER_PINGS
                         The number of times to send a user a push notification in a row. Defaults to 1
-
-duo_keys:
   host                  API host url. E.g. api-1234abcd.duosecurity.com
   --admin-ikey ADMIN_IKEY
-                        Admin API integration key
+                        Admin API integration key. Only required if ADMIN_IKEY environment variable not set.
   --admin-skey ADMIN_SKEY
                         Admin API secret key
   --auth-ikey AUTH_IKEY
                         Auth API integration key
   --auth-skey AUTH_SKEY
                         Auth API secret key
-
-cmds:
   --list-groups         To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.
   --empty-results       To be used alone, no other commands will be executed. Deletes all files in the results folder.
 ```
