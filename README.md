@@ -78,10 +78,14 @@ Passing in the API keys as environment variables allows you to rerun the contain
 
 
 For example:
-TODO: need to start the container again
 ```
 docker exec <container_id> "host"
 ```
+or
+```
+docker exec <container_id> "host" [api keys]
+```
+
 
 ## Running Duodo locally:
 Duodo can be run both locally and in Docker.
