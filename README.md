@@ -9,12 +9,22 @@
 ```
 
 # Duodo
-Duo push notification spammer for testing MFA auth fatigue
+This tool is designed to test user fatigue when continuously receiving unsolicited push notifications for Duo MFA. 
+
+Thee number of push notifications received an frequency can be adjusted
+
 - elaborate, what it does and what problem it solves
 - test users to see how many would accept an unsolicited duo prompt
 
+### Requirements
+This tool has been tested in Python 3.11.
+To install the required modules, in the root of this directory run
+```
+pip install -r requirements.txt
+```
+
 ## Intro
-This script can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
+This tool can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
 - Who'll receive push notifications. You can either send it to all users associated with a Duo account, or customise it - 1 or more Duo groups, a specific list of users (from user-list.txt), and include a list of users to ignore.
 - The number of people who receive the notification at once (batch size)
 - The number of times to send push notifications to each user
@@ -25,7 +35,7 @@ This script can be used to create a customisable "push" campaign for the Duo MFA
 - Customise the text that appears on the push notification
 
 There are also 2 other options:
-- List all groups you can use when doing the push campaigns based on users in specific groups
+- List all groups you can use when doing the push campaigns. This requires both the admin ikey and skey be passed in, or set in the environment variables.
 - Empty out the results folder that's created by default. This will ask you if you are sure you want to delete the folder. Any answer other the 'y' (without the quote marks) will not execute the command
 
 
@@ -47,13 +57,6 @@ Linux CLI:
     ...
 ```
 
-### Requirements
-This tool has been tested in Python 3.11.
-To install the required modules, in the root of this directory run
-```
-pip install -r requirements.txt
-```
-
 ## How to get API keys:
 - Log in as an Admin user
 - On the sidebar on the left, go to `Applications`
@@ -61,25 +64,6 @@ pip install -r requirements.txt
 - Scroll down until you find `Admin API`, then click the protect button on the right.
 - This'll take you to the endpoint's page. Scroll down to `Permissions` and tick `Grant read resource`
 - At the top there'll be the Integration key, Secret key and API Hostname
-
-
-## Running Duodo locally:
-Duodo can be run both locally and in Docker.
-
-To run Duodo locally, you'll need to install the dependencies in the requirements.txt by running the following command:
-```
-pip install -r requirements.txt
-```
-
-Then, Duodo can be run using:
-```
-python .\main.py "api-1234abcd.duosecurity.com" [options]
-```
-
-For example:
-```
-python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "My test push"
-```
 
 ## Running Duodo in Docker:
 You can run Duodo in docker by either passing the API keys in  each time, or setting them as environment variables.
@@ -97,8 +81,27 @@ Passing in the API keys as environment variables allows you to rerun the contain
 
 
 For example:
+TODO: need to start the container again
 ```
 docker exec <container_id> "host"
+```
+
+## Running Duodo locally:
+Duodo can be run both locally and in Docker.
+
+To run Duodo locally, you'll need to install the dependencies in the requirements.txt by running the following command:
+```
+pip install -r requirements.txt
+```
+
+Then, Duodo can be run using:
+```
+python .\main.py "api-1234abcd.duosecurity.com" [options]
+```
+
+For example:
+```
+python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "My test push"
 ```
 
 
