@@ -55,7 +55,7 @@ Linux CLI:
 - This'll take you to the endpoint's page. Scroll down to `Permissions` and tick `Grant read resource`
 - At the top there'll be the Integration key, Secret key and API Hostname
 
-## Running Duodo in Docker:
+## Running Duodo:
 You can run Duodo in docker by either passing the API keys in  each time, or setting them as environment variables.
 
 Normal:
@@ -79,11 +79,15 @@ or
 docker exec <container_id> "host" [api keys]
 ```
 
+### Resume Campaign
+If you need to resume a Duo push campaign, you can run:
+```
+docker exec "host" --resume-from-last
+```
+
 
 ## Running Duodo locally:
-Duodo can also be run locally.
-
-This tool has been tested with Python 3.11.
+Duodo can also be run locally, and has been tested with Python 3.11.
 
 You'll need to install the dependencies in the requirements.txt by running the following command:
 ```
@@ -92,45 +96,37 @@ pip install -r requirements.txt
 
 Then, Duodo can be run using:
 ```
-python .\main.py "api-1234abcd.duosecurity.com" [options]
+py main.py "api-1234abcd.duosecurity.com" [options]
 ```
 
 For example:
 ```
-python .\main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "My test push"
+py main.py "api-1234abcd.duosecurity.com" --user-list "user-list.csv" --push-text "My test push"
 ```
 
-
-## Resume a campaign
-### Locally
-To resume a campaign running locally, you can run...
+### Resume a campaign
+To resume a campaign running locally, you can run:
 ```
-python3 main.py "host" --resume-from-last
+py main.py "host" --resume-from-last
 ```
 or
 ```
-python3 main.py "host" --resume-from-file "results/file.csv"
-```
-
-### Docker
-If you need to resume a Duo push campaign and you're using Docker, you can run:
-```
-docker exec "host" --resume-from-last
+py main.py "host" --resume-from-file "results/file.csv"
 ```
 
 ## Get your results
+To get your results out of Docker, run:
+```
+docker cp 'container':/app/results.csv /host/path/target
+```
+
+
 Locally, you can get your results from the results folder in the root of the Duodo folder.
 ```
 Duodo
 |- results
     |- results12345.csv
 ```
-
-To get your results out of Docker:
-```
-docker cp 'container':/app/results.csv /host/path/target
-```
-
 
 # Full Usage
 ```
