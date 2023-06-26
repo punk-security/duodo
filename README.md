@@ -58,17 +58,25 @@ Linux CLI:
 ## Running Duodo:
 You can run Duodo in docker by either passing the API keys in  each time, or setting them as environment variables.
 
-This command will also save the results to the specified path
-- how to pass in user list and ignore list
+This command will mount the specified folder into docker and also save the results to it.
 
 Normal:
 ```
-docker run [image name] "host" [api keys] [commands] -v /host/file/path:/app/[filename].csv cp /app/results.csv /host/path/target
+docker run [image name] "host" [api keys] [commands] -v /host/file/path:/app/[folder]
+```
+Example:
+```
+docker run [image name] "host" [api keys] [commands] -v /duodo/results:/app/results
+```
+If using the following, you will need to specify the location of the user-list.csv and ignore-list.csv (or whatever you called them).
+Example:
+```
+docker run [image name] "host" [api keys] [commands] -v /duodo/results:/app/results --user-list "results/user-list.csv"
 ```
 
 Passing environment variables:
 ```
-docker run [image name] "host" [commands] -v /host/file/path:/app/[filename].csv -e ADMIN_IKEY="" ADMIN_SKEY="" AUTH_IKEY="" AUTH_SKEY="" cp /app/results.csv /host/path/target
+docker run [image name] "host" [commands] -v /host/file/path:/app/[folder] -e ADMIN_IKEY="" ADMIN_SKEY="" AUTH_IKEY="" AUTH_SKEY=""
 ```
 Passing in the API keys as environment variables allows you to rerun the container again without having to pass them in.
 
@@ -80,7 +88,7 @@ docker run -v /results/on/host:/app/results [image name] [options] --resume-from
 ```
 or
 ```
-docker run -v /results/on/host:/app/results [image name] [options] --resume-from-file "/app/results/[resultsfile].csv"
+docker run -v /results/on/host:/app/results [image name] [options] --resume-from-file "results/[resultsfile].csv"
 ```
 `You will need provide all your previous options again including API keys.`
 
