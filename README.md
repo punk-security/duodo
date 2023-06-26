@@ -58,23 +58,20 @@ Linux CLI:
 ## Running Duodo:
 You can run Duodo in docker by either passing the API keys in  each time, or setting them as environment variables.
 
+This command will also save the results to the specified path
+- how to pass in user list and ignore list
+
 Normal:
 ```
-docker run punksecurity/duodo "host" [api keys] [commands]
+docker run [image name] "host" [api keys] [commands] -v /host/file/path:/app/[filename].csv cp /app/results.csv /host/path/target
 ```
 
 Passing environment variables:
 ```
-docker run punksecurity/duodo "host" [commands] -e ADMIN_IKEY="" ADMIN_SKEY="" AUTH_IKEY="" AUTH_SKEY=""
+docker run [image name] "host" [commands] -v /host/file/path:/app/[filename].csv -e ADMIN_IKEY="" ADMIN_SKEY="" AUTH_IKEY="" AUTH_SKEY="" cp /app/results.csv /host/path/target
 ```
 Passing in the API keys as environment variables allows you to rerun the container again without having to pass them in.
 
-
-### Getting your results
-To get your results out of Docker, run:
-```
-docker cp 'container':/app/results.csv /host/path/target
-```
 
 ### Resume Campaign
 If you need to resume a Duo push campaign, you can run:
@@ -85,7 +82,7 @@ or
 ```
 docker run -v /results/on/host:/app/results [image name] [options] --resume-from-file "/app/results/[resultsfile].csv"
 ```
-`You will need to pass either the API keys or environment variables again.`
+`You will need provide all your previous options again including API keys.`
 
 ## Running Duodo locally:
 Duodo can also be run locally, and has been tested with Python 3.11.
