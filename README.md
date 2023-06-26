@@ -11,7 +11,7 @@
 # Duodo
 This tool is designed to test user MFA fatigue when continuously receiving unsolicited push notifications for Duo MFA. You can test how many of your users will accept unsolicited push notifications.
 
-Duodo allows you to create customisable MFA push campaigns, allowing you to use to target only specific users and numbers, or Duo groups. You can also use an ignore list by itself, or in conjunction with these other options.
+Duodo allows you to create customisable MFA push campaigns, where you can target only specific users and numbers, or Duo groups. You can choose to only target specific users, target all users, or all users within specific groups, and include an ignore list to omit users from testing.
 
 ## Intro
 This tool can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
