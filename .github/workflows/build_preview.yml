@@ -1,4 +1,4 @@
-name: Build and publish release on new tag
+name: Build pull request
 on:
   pull_request:
     branches: [ main ]
