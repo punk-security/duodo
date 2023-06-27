@@ -169,7 +169,7 @@ options:
   -p PUSH_TEXT, --push-text PUSH_TEXT
                         Text to display in push notification. Defaults to 'Login'.
   -g BY_GROUPS, --by-groups BY_GROUPS
-                        Send push notifications to all users in specified groups. Groups are separated by a comma e.g. "group1, group2". If groups contain a " in the name, these need to be escaped, e.g. 'My group \"HR\"'.
+                        Send push notifications to all users in specified groups. Groups are separated by a comma e.g. "group1, group2". if using Powershell, if groups contain a " in the name, these need to be escaped, e.g. 'My group \"HR\"'.
   --list-groups         To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.
   --empty-results       To be used alone, no other commands will be executed. Deletes all files in the results folder.
 ```
