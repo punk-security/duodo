@@ -229,7 +229,7 @@ def filter_by_groups(all_users:list) -> list:
 
     groups_list = admin_api.get_groups()
 
-    groups_to_use = [group for group in groups_list if group["name"] in g]
+    groups_to_use = [group["name"] for group in groups_list if group["name"] in g]
 
 
     if len(groups_to_use) != len(g):
