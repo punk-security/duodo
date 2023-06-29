@@ -11,7 +11,7 @@
 # Duodo
 This tool is designed to test user MFA fatigue when continuously receiving unsolicited push notifications for Duo MFA. You can test how many of your users will accept unsolicited push notifications.
 
-Duodo allows you to create customisable MFA push campaigns, where you can target only specific users and numbers, or Duo groups. You can choose to only target specific users, target all users, or all users within specific groups, and include an ignore list to omit users from testing.
+Duodo allows you to create customisable MFA push campaigns. You can choose to only target specific users, target all users, or all users within specific groups, and include an ignore list to omit users from testing.
 
 ## Intro
 This tool can be used to create a customisable "push" campaign for the Duo MFA app. You can customise:
@@ -62,21 +62,21 @@ This command will mount the specified folder into docker and also save the resul
 
 Normal:
 ```
-docker run [image name] "host" [api keys] [commands] -v /host/file/path:/app/[folder]
+docker run punksecurity/duodo "host" [api keys] [commands] -v /host/file/path:/app/[folder]
 ```
 Example:
 ```
-docker run [image name] "host" [api keys] [commands] -v /duodo/results:/app/results
+docker run punksecurity/duodo "host" [api keys] [commands] -v /duodo/results:/app/results
 ```
 If using the following, you will need to specify the location of the user-list.csv and ignore-list.csv (or whatever you called them).
 Example:
 ```
-docker run [image name] "host" [api keys] [commands] -v /duodo/results:/app/results --user-list "results/user-list.csv"
+docker run punksecurity/duodo "host" [api keys] [commands] -v /duodo/results:/app/results --user-list "results/user-list.csv"
 ```
 
 Passing environment variables:
 ```
-docker run [image name] "host" [commands] -v /host/file/path:/app/[folder] -e ADMIN_IKEY="" ADMIN_SKEY="" AUTH_IKEY="" AUTH_SKEY=""
+docker run punksecurity/duodo "host" [commands] -v /host/file/path:/app/[folder] -e ADMIN_IKEY="" ADMIN_SKEY="" AUTH_IKEY="" AUTH_SKEY=""
 ```
 Passing in the API keys as environment variables allows you to rerun the container again without having to pass them in.
 
@@ -84,11 +84,11 @@ Passing in the API keys as environment variables allows you to rerun the contain
 ### Resume Campaign
 If you need to resume a Duo push campaign, you can run:
 ```
-docker run -v /results/on/host:/app/results [image name] [options] --resume-from-last
+docker run -v /results/on/host:/app/results punksecurity/duodo [options] --resume-from-last
 ```
 or
 ```
-docker run -v /results/on/host:/app/results [image name] [options] --resume-from-file "results/[resultsfile].csv"
+docker run -v /results/on/host:/app/results punksecurity/duodo [options] --resume-from-file "results/[resultsfile].csv"
 ```
 `You will need provide all your previous options again including API keys.`
 
