@@ -101,14 +101,9 @@ user_pings = args.user_pings
 user_wait = args.user_wait
 
 if args.output_file is not None:
+    checked = True
     output_file = args.output_file
     
-    if path.isfile(args.output_file):
-        print("This file already exists, append to existing file?")
-        p = input("[y/N]")
-        if p != "y":
-            exit()
-
     try:
         open(output_file, 'w').close()
     except FileNotFoundError:
@@ -119,7 +114,7 @@ if args.output_file is not None:
         exit()
 
 # Mutually exclusive resume from last and file, so only 1 can be passed in
-elif args.resume_from_last is not None:
+elif args.resume_from_last:
     p = "results"
     files = [f for f in listdir(p) if path.isfile(path.join(p, f))]
 
@@ -288,7 +283,7 @@ def get_users_from_list(all_users:list) -> list:
     try:
         with open(args.user_list, "r") as file:
             spamreader = csv.reader(file, delimiter='-')
-            filtered_users = { row[0].strip() : re.sub('[^\d]', '', row[1]) if len(row) > 1 else None for row in spamreader }
+            filtered_users = { row[0].strip() : re.sub('[\+][^\d]', '', row[1].strip()) if len(row) > 1 else None for row in spamreader }
     except FileNotFoundError:
         print(args.user_list, "not found")
         exit()
@@ -304,36 +299,29 @@ def get_users_from_list(all_users:list) -> list:
             print("No phone numbers associated with", user["email"], ", skipping.")
             continue
 
+        # Usable phone numbers for current user
         useable_phones = [phone["number"] for phone in user["phones"] if phone["activated"] and "push" in phone["capabilities"]]
 
         if len(useable_phones) == 0:
             print("No phones with push notifications activated for", user["email"], ", skipping.")
             continue
+        
+        # If user isn't assigned a number, a random one will be selected
+        if filtered_users[user["email"]] is None:
+            user["phones"] = [random.choice(user["phones"])]
 
-        #filtered_users[user["email"]] = useable_phones[0]
+        # If user is assigned a number in user list
+        elif filtered_users[user["email"]] != "":
 
-        print(filtered_users)
-        print(user["email"])
+            # If number provided not usable
+            if filtered_users[user["email"]] not in useable_phones:
+                print("Unable to use provided phone number for", user["email"], ", skipping.")
+                continue
 
-        #phone_number = "+" + useable_phones[0]
+            else:
+                user["phones"] = [phone for phone in user["phones"] if phone["number"] == filtered_users[user["email"]]]
 
-        #if phone_number not in useable_phones:
-        #    print(phone_number)
-        #    print("Unable to use provided phone number for", user["email"], ", skipping.")
-        #    continue
-
-        #if phone_number is None:
-        #    user["phones"] = [random.choice(user["phones"])]
-        #else:
-        #    p = [phone for phone in user["phones"] if phone["number"] == phone_number]
-        #    if p != phone_number:
-        #        print("Unable to find given phone number for", user["email"], ", selecting a random phone number instead.")
-        #        p = random.choice(user["phones"])
-
-        #    user["phones"] = [p]
-
-        #user["phones"] = useable_phones
-
+        print(user["phones"])
         new_users.append(user)
 
     return new_users
@@ -409,8 +397,7 @@ def send_notification_query(user_id:str, devices:list, username:str) -> list:
 
     for i in range(0, user_pings):
         try:
-            # res = auth_api.auth("push", user_id=user_id, type=args.push_text, device=devices)
-            res = {'result': 'Worked', 'status': 'allow', 'status_msg': 'test push'}
+            res = auth_api.auth("push", user_id=user_id, type=args.push_text, device=devices)
         except Exception as e:
             res = {'result': '', 'status': 'invalid_request', 'status_msg': 'Unable to ping user'}
             break
@@ -487,9 +474,7 @@ def check_duo_push(users: list) -> dict:
     users_details = {}
 
     for user in users:
-        print(user["phones"])
         useable_phones = [phone["phone_id"] for phone in user["phones"] if phone["activated"] and "push" in phone["capabilities"]]
-        print(user["phones"])
 
         if len(useable_phones) == 0:
             print("No useable phones for", user["email"], ". User will not be added to push campaign.")

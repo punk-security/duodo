@@ -47,6 +47,12 @@ Linux CLI:
     ...
 ```
 
+NOTE: If specifying a phone number for a user in a user-list, the number provided must match the number in DUO exactly. E.g., if the number appears as '+4476315019', then that's what must be in the user list.
+
+```
+John Doe - +4476315019
+```
+
 ## How to get API keys:
 - Log in as an Admin user
 - On the sidebar on the left, go to `Applications`
@@ -157,7 +163,7 @@ options:
   --auth-skey AUTH_SKEY
                         Auth API secret key. Only required if AUTH_SKEY environment variable not set.
   -o OUTPUT_FILE, --output-file OUTPUT_FILE
-                        Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv
+                        Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv. IMPORTANT: if the file specified already exists, results will be appended to it.
   -f RESUME_FROM_FILE, --resume-from-file RESUME_FROM_FILE
                         Path of file containing results of a previous campaign to use to resume sending push notifications to and updating.
   -r, --resume-from-last
