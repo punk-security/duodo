@@ -426,8 +426,6 @@ def get_ignore_list() -> list:
                 skip_users.append(row[0])   
             except IndexError:
                 continue
-
-    
     
     return skip_users
 
@@ -476,7 +474,7 @@ def check_duo_push(users: list) -> dict:
             print("No useable phones for", user["email"], ". User will not be added to push campaign.")
         else:
             users_details[user["user_id"]] = {"username": user["username"], "devices": useable_phones}
-        
+
 
     return users_details
 
