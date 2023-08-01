@@ -160,10 +160,6 @@ def main():
         print("Filtering out Duo users to only get those specified in user list.")
         users = get_users_from_list(users)
 
-    if len(users) == 0:
-        print("No users will receive push notifications with current parameters provided.")
-        exit()
-
     if args.by_groups:
         print("Getting all users by group.")
         users = filter_by_groups(users)
@@ -321,7 +317,6 @@ def get_users_from_list(all_users:list) -> list:
             else:
                 user["phones"] = [phone for phone in user["phones"] if phone["number"] == filtered_users[user["email"]]]
 
-        print(user["phones"])
         new_users.append(user)
 
     return new_users
@@ -357,7 +352,6 @@ def send_push_notifications(users_list:list):
             result +=  [[i[2], i[0], "", "", "\'Unable to push notification\'", str(datetime.datetime.now()), "\n"]]
 
 
-        print(users_to_push)
         if len(users_to_push) > 0:
             try:
                 with Pool(batch_size) as p:
@@ -398,6 +392,8 @@ def send_notification_query(user_id:str, devices:list, username:str) -> list:
     for i in range(0, user_pings):
         try:
             res = auth_api.auth("push", user_id=user_id, type=args.push_text, device=devices)
+            ### DEBUG: used for testing
+            # res = {'result': 'Worked', 'status': 'sent', 'status_msg': 'testing'}
         except Exception as e:
             res = {'result': '', 'status': 'invalid_request', 'status_msg': 'Unable to ping user'}
             break
@@ -433,6 +429,8 @@ def get_ignore_list() -> list:
                 skip_users.append(row[0])   
             except IndexError:
                 continue
+
+    
     
     return skip_users
 
@@ -459,6 +457,7 @@ def filter_users(all_users:list, skip_users:list) -> list:
 
     # Creates a list with the inactive users and ignore list users removed
     filtered_users = [user for user in all_users if user["status"] == "active" and user["email"] not in skip_users and user["username"] not in users_to_remove]
+    
     return filtered_users
 
 
