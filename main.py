@@ -101,7 +101,6 @@ user_pings = args.user_pings
 user_wait = args.user_wait
 
 if args.output_file is not None:
-    checked = True
     output_file = args.output_file
     
     try:
