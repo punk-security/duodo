@@ -171,7 +171,7 @@ options:
   -i IGNORE_LIST, --ignore-list IGNORE_LIST
                         Path to file of list of emails of users to ignore.
   -l USER_LIST, --user-list USER_LIST
-                        Sends push notifications only to specified users in a provided file. Userlist format is either one of `email` or `email - phonenumber`. E.g. user-list.txt
+                        Sends push notifications only to specified users in a provided file. Userlist format is either one of `email` or `email,phonenumber`. E.g. user-list.txt
   -p PUSH_TEXT, --push-text PUSH_TEXT
                         Text to display in push notification. Defaults to 'Login'.
   -g BY_GROUPS, --by-groups BY_GROUPS

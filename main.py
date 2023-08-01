@@ -277,8 +277,8 @@ def get_users_from_list(all_users:list) -> list:
     # Gets all users from user list
     try:
         with open(args.user_list, "r") as file:
-            spamreader = csv.reader(file, delimiter='-')
-            filtered_users = { row[0].strip() : re.sub('[\+][^\d]', '', row[1].strip()) if len(row) > 1 else None for row in spamreader }
+            spamreader = csv.reader(file, delimiter=',')
+            filtered_users = { row[0].strip() : re.sub('[^\+\d]', '', row[1].strip()) if len(row) > 1 else None for row in spamreader }
     except FileNotFoundError:
         print(args.user_list, "not found")
         exit()
@@ -391,8 +391,6 @@ def send_notification_query(user_id:str, devices:list, username:str) -> list:
     for i in range(0, user_pings):
         try:
             res = auth_api.auth("push", user_id=user_id, type=args.push_text, device=devices)
-            ### DEBUG: used for testing
-            # res = {'result': 'Worked', 'status': 'sent', 'status_msg': 'testing'}
         except Exception as e:
             res = {'result': '', 'status': 'invalid_request', 'status_msg': 'Unable to ping user'}
             break
