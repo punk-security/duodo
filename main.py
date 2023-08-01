@@ -8,19 +8,17 @@ parser = argparse.ArgumentParser(
     description='Sends push notifications to all specified users, staggered over the specified period of time',
 )
 
-user_pings_wait = parser.add_argument_group("user_pings_wait")
-user_pings_wait.add_argument('-w', '--user-wait', type=int, default=60, help='The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1') # number of users to ping at once
-user_pings_wait.add_argument('-u', '--user-pings', type=int, default=1, help='The number of times to send a user a push notification in a row. Defaults to 1') # number of users to ping at once
+parser.add_argument('-w', '--user-wait', type=int, default=60, help='The amount of time in seconds to wait between each push notification sent to a specific user. This time does not include the time taken to wait for the notification to timeout or for the user to deny it. Defaults to 60 seconds if --user-pings is >1') # number of users to ping at once
+parser.add_argument('-u', '--user-pings', type=int, default=1, help='The number of times to send a user a push notification in a row. Defaults to 1') # number of users to ping at once
 
 parser.add_argument('-b', '--batch-size', type=int, default=1, help='The number of users to send push notifications to at once') # number of users to ping at once
 parser.add_argument('-t', '--time-between', type=int, default=300, help='The amount of time in seconds to wait between each batch of push notifications') # defaults to 5 minutes
 
-duo_keys = parser.add_argument_group("duo_keys")
-duo_keys.add_argument('host', help="API host url. E.g. api-1234abcd.duosecurity.com")
-duo_keys.add_argument('--admin-ikey', help="Admin API integration key") # integration key
-duo_keys.add_argument('--admin-skey', help="Admin API secret key") # secret key
-duo_keys.add_argument('--auth-ikey', help="Auth API integration key") # integration key
-duo_keys.add_argument('--auth-skey', help="Auth API secret key") # secret key
+parser.add_argument('host', help="API host url. E.g. api-1234abcd.duosecurity.com")
+parser.add_argument('--admin-ikey', help="Admin API integration key. Only required if ADMIN_IKEY environment variable not set.") # integration key
+parser.add_argument('--admin-skey', help="Admin API secret key. Only required if ADMIN_SKEY environment variable not set.") # secret key
+parser.add_argument('--auth-ikey', help="Auth API integration key.  Only required if AUTH_IKEY environment variable not set.") # integration key
+parser.add_argument('--auth-skey', help="Auth API secret key.  Only required if AUTH_SKEY environment variable not set.") # secret key
 
 output_exclusive = parser.add_mutually_exclusive_group(required=False)
 output_exclusive.add_argument('-o', '--output-file', default=None, help='Full or relative path of the output file including name e.g. /results/results.csv. Defaults to results/result<datetime>.csv')
@@ -32,9 +30,8 @@ parser.add_argument('-l', '--user-list', help="Sends push notifications only to 
 parser.add_argument('-p', '--push-text', default="Login", help="Text to display in push notification. Defaults to 'Login'.")
 parser.add_argument('-g', '--by-groups', help="Send push notifications to all users in specified groups. Groups are separated by a comma e.g. \"group1, group2\"")
 
-cmds = parser.add_argument_group("cmds")
-cmds.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
-cmds.add_argument('--empty-results', action="store_true", help="To be used alone, no other commands will be executed. Deletes all files in the results folder.")
+parser.add_argument('--list-groups', action="store_true", help="To be used alone, no other commands will be executed. Lists groups associate with a given endpoint. Requires the admin integration key and secret key.")
+parser.add_argument('--empty-results', action="store_true", help="To be used alone, no other commands will be executed. Deletes all files in the results folder.")
 
 # Makes a results folder if one doesn't already exist
 makedirs("results", exist_ok=True)
@@ -105,6 +102,15 @@ user_wait = args.user_wait
 
 if args.output_file is not None:
     output_file = args.output_file
+    
+    try:
+        open(output_file, 'w').close()
+    except FileNotFoundError:
+        print("Unable to create file", output_file)
+        exit()
+    except PermissionError:
+        print("You don't have permission to access", output_file)
+        exit()
 
 # Mutually exclusive resume from last and file, so only 1 can be passed in
 elif args.resume_from_last:
@@ -140,7 +146,7 @@ if args.ignore_list is not None:
 
 if args.user_list is not None:
     if not path.exists(args.user_list):
-        print(str(args.args.user_list), "not found.")
+        print(str(args.user_list), "not found.")
         exit()
 
 
@@ -152,10 +158,6 @@ def main():
     if args.user_list:
         print("Filtering out Duo users to only get those specified in user list.")
         users = get_users_from_list(users)
-
-    if len(users) == 0:
-        print("No users will receive push notifications with current parameters provided.")
-        exit()
 
     if args.by_groups:
         print("Getting all users by group.")
@@ -232,8 +234,14 @@ def filter_by_groups(all_users:list) -> list:
 
     groups_list = admin_api.get_groups()
 
-    groups_to_use = [group for group in groups_list if group["name"] in g]
+    groups_to_use = [group["name"] for group in groups_list if group["name"] in g]
 
+
+    if  len(groups_to_use) == 0:
+        print("No groups found with the following specified names:")
+        for i in groups_list:
+            print(i["name"])
+        exit()
 
     if len(groups_to_use) != len(g):
         print("Not all groups have been found.")
@@ -269,8 +277,8 @@ def get_users_from_list(all_users:list) -> list:
     # Gets all users from user list
     try:
         with open(args.user_list, "r") as file:
-            spamreader = csv.reader(file, delimiter='-')
-            filtered_users = { row[0].strip() : re.sub('[^\d]', '', row[1]) if len(row) > 1 else None for row in spamreader }
+            spamreader = csv.reader(file, delimiter=',')
+            filtered_users = { row[0].strip() : re.sub('[^\+\d]', '', row[1].strip()) if len(row) > 1 else None for row in spamreader }
     except FileNotFoundError:
         print(args.user_list, "not found")
         exit()
@@ -286,28 +294,27 @@ def get_users_from_list(all_users:list) -> list:
             print("No phone numbers associated with", user["email"], ", skipping.")
             continue
 
+        # Usable phone numbers for current user
         useable_phones = [phone["number"] for phone in user["phones"] if phone["activated"] and "push" in phone["capabilities"]]
 
         if len(useable_phones) == 0:
             print("No phones with push notifications activated for", user["email"], ", skipping.")
             continue
-
-        phone_number = "+" + filtered_users[user["email"]].strip()
-
-        if phone_number not in useable_phones:
-            print(phone_number)
-            print("Unable to use provided phone number for", user["email"], ", skipping.")
-            continue
-
-        if phone_number is None:
+        
+        # If user isn't assigned a number, a random one will be selected
+        if filtered_users[user["email"]] is None:
             user["phones"] = [random.choice(user["phones"])]
-        else:
-            p = [phone for phone in user["phones"] if phone["number"] == phone_number]
-            if p != phone_number:
-                print("Unable to find given phone number for", user["email"], ", selecting a random phone number instead.")
-                p = random.choice(user["phones"])
 
-            user["phones"] = [p]
+        # If user is assigned a number in user list
+        elif filtered_users[user["email"]] != "":
+
+            # If number provided not usable
+            if filtered_users[user["email"]] not in useable_phones:
+                print("Unable to use provided phone number for", user["email"], ", skipping.")
+                continue
+
+            else:
+                user["phones"] = [phone for phone in user["phones"] if phone["number"] == filtered_users[user["email"]]]
 
         new_users.append(user)
 
@@ -344,7 +351,6 @@ def send_push_notifications(users_list:list):
             result +=  [[i[2], i[0], "", "", "\'Unable to push notification\'", str(datetime.datetime.now()), "\n"]]
 
 
-        print(users_to_push)
         if len(users_to_push) > 0:
             try:
                 with Pool(batch_size) as p:
@@ -446,6 +452,7 @@ def filter_users(all_users:list, skip_users:list) -> list:
 
     # Creates a list with the inactive users and ignore list users removed
     filtered_users = [user for user in all_users if user["status"] == "active" and user["email"] not in skip_users and user["username"] not in users_to_remove]
+    
     return filtered_users
 
 
@@ -467,7 +474,7 @@ def check_duo_push(users: list) -> dict:
             print("No useable phones for", user["email"], ". User will not be added to push campaign.")
         else:
             users_details[user["user_id"]] = {"username": user["username"], "devices": useable_phones}
-        
+
 
     return users_details
 
